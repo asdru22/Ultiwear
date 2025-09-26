@@ -1,4 +1,4 @@
-package com.aln.ultiwear
+package com.aln.ultiwear.data
 
 import android.content.Context
 import androidx.credentials.ClearCredentialStateRequest
@@ -6,6 +6,7 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetCredentialResponse
+import com.aln.ultiwear.BuildConfig
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
@@ -18,7 +19,7 @@ class GoogleAuthClient(
     private val context: Context,
 ) {
     private val tag = "GoogleAuthClient: "
-    private val credentialManager = CredentialManager.create(context)
+    private val credentialManager = CredentialManager.Companion.create(context)
     private val firebaseAuth = FirebaseAuth.getInstance()
 
     fun isSingedIn(): Boolean {
@@ -49,10 +50,10 @@ class GoogleAuthClient(
         val credential = result.credential
         if (
             credential is CustomCredential &&
-            credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
+            credential.type == GoogleIdTokenCredential.Companion.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
         ) {
             try {
-                val tokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                val tokenCredential = GoogleIdTokenCredential.Companion.createFrom(credential.data)
 
                 println(tag + "name: ${tokenCredential.displayName}")
                 println(tag + "email: ${tokenCredential.id}")
