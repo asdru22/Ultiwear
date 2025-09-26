@@ -14,10 +14,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
-
+import com.aln.ultiwear.R
 
 @Composable
 fun LoginScreen(
@@ -38,7 +39,6 @@ fun LoginScreen(
             Text(
                 text = "Ultiwear",
                 style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.primary
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -52,9 +52,11 @@ fun LoginScreen(
                 }
             ) {
                 Text(
-                    text = "Sign In With Google",
+                    text = stringResource(R.string.sign_in_with_google),
                     fontSize = 16.sp,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp)
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
+                    color = MaterialTheme.colorScheme.secondary
+
                 )
             }
         }

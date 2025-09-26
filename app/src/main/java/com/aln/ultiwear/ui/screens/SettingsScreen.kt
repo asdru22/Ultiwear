@@ -12,10 +12,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.aln.ultiwear.R
 import com.aln.ultiwear.data.GoogleAuthClient
 import kotlinx.coroutines.launch
 
@@ -40,7 +42,7 @@ fun SettingsScreen(
             }
         }) {
             Text(
-                text = "Sign Out",
+                text = stringResource(R.string.log_out),
                 fontSize = 16.sp,
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 4.dp)
             )

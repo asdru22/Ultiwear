@@ -5,22 +5,29 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.aln.ultiwear.data.GoogleAuthClient
 import com.aln.ultiwear.model.TabItem
+import com.aln.ultiwear.ui.screens.Footer
 import com.aln.ultiwear.ui.screens.LoginScreen
 import com.aln.ultiwear.ui.screens.SettingsScreen
 import com.aln.ultiwear.ui.theme.LocalBottomBarBackground
@@ -74,7 +81,6 @@ fun AppWithBottomBar(
         // Content of the selected tab
         tabs[selectedIndex].content()
 
-        // Bottom bar
         Footer(
             Modifier
                 .fillMaxWidth()
@@ -93,60 +99,6 @@ fun AppWithBottomBar(
         )
     }
 }
-
-
-@Composable
-fun Footer(
-    modifier: Modifier,
-    tabs: List<TabItem>,
-    selectedIndex: Int,
-    onTabSelected: (Int) -> Unit
-) {
-    Row(
-        modifier = modifier
-    ) {
-        tabs.forEachIndexed { index, tab ->
-            val isSelected = index == selectedIndex
-            FooterButton(
-                isSelected,
-                tab,
-                Modifier
-                    .weight(1f)
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                        else Color.Transparent,
-                        CircleShape
-                    )
-                    .clickable(
-                        indication = null, // remove ripple rectangle
-                        interactionSource = remember { MutableInteractionSource() }
-                    ) { onTabSelected(index) })
-        }
-    }
-}
-
-@Composable
-fun FooterButton(
-    isSelected: Boolean,
-    tab: TabItem,
-    modifier: Modifier
-) {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier
-    ) {
-        Icon(
-            painter = painterResource(id = tab.icon),
-            contentDescription = tab.title,
-            tint = if (isSelected) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.size(28.dp)
-        )
-    }
-}
-
 
 @Composable
 fun WardrobeScreen() {
