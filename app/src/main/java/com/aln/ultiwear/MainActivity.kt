@@ -30,6 +30,7 @@ import com.aln.ultiwear.model.TabItem
 import com.aln.ultiwear.ui.screens.Footer
 import com.aln.ultiwear.ui.screens.LoginScreen
 import com.aln.ultiwear.ui.screens.SettingsScreen
+import com.aln.ultiwear.ui.screens.WardrobeScreen
 import com.aln.ultiwear.ui.theme.LocalBottomBarBackground
 import com.aln.ultiwear.ui.theme.UltiwearTheme
 
@@ -98,14 +99,6 @@ fun AppWithBottomBar(
             onTabSelected = { selectedIndex = it }
         )
     }
-}
-
-@Composable
-fun WardrobeScreen() {
-    Box(
-        Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) { Text("Wardrobe") }
 }
 
 @Composable
