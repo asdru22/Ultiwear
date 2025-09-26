@@ -1,0 +1,4 @@
+/app/build
+/.gradle/8.7
+*.zip
+app/google-services.json
