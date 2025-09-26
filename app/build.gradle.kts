@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.gms.google.services)
+    alias(libs.plugins.compose.compiler)
 }
 
 // Read the local.properties file from project root
@@ -21,7 +22,7 @@ val googleClientId: String = if (localPropsFile.exists()) {
 
 android {
     namespace = "com.aln.ultiwear"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.aln.ultiwear"
@@ -92,5 +93,5 @@ dependencies {
     implementation(libs.googleid)
 
     implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.auth.ktx)
+    implementation(libs.firebase.auth)
 }
