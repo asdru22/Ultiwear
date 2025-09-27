@@ -11,10 +11,12 @@ import com.aln.ultiwear.model.User
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
+import com.google.firebase.Firebase
 import com.google.firebase.auth.AuthCredential
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 import java.util.UUID
@@ -102,7 +104,7 @@ class GoogleAuthClient(
     }
 
     private suspend fun registerNewUser(user: FirebaseUser) {
-        val newUserId = UUID.randomUUID().toString()
+        val newUserId = Firebase.auth.currentUser?.uid ?: "unknown"
         val newUser = User(id = newUserId, email = user.email ?: "")
         firestore.collection("users")
             .document(newUserId)
