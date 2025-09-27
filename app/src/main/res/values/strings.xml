@@ -9,4 +9,13 @@
     <string name="condition_good">Good</string>
     <string name="condition_ok">Ok</string>
     <string name="condition_poor">Poor</string>
+    <string name="wardrobe_front_picture">Front Picture</string>
+    <string name="wardrobe_back_picture">Back Picture</string>
+    <string name="wardrobe_front_picture_selected">Selected</string>
+    <string name="wardrobe_back_picture_selected">Selected</string>
+    <string name="upload">Upload</string>
+    <string name="cancel">Cancel</string>
+    <string name="wardrobe_add_item">Add Item</string>
+    <string name="wardrobe_select_condition">Select Condition</string>
+    <string name="wardrobe_select_size">Select Size</string>
 </resources>

@@ -1,7 +1,12 @@
 package com.aln.ultiwear.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -12,8 +17,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.aln.ultiwear.R
+import com.aln.ultiwear.model.WardrobeItem
 import com.aln.ultiwear.ui.dialogs.AddWardrobeItemDialog
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
+import com.google.firebase.firestore.firestore
 
 
 @Composable
@@ -40,7 +50,7 @@ fun WardrobeScreen() {
 }
 
 @Composable
-fun TitleBar(statusBarPadding: Dp){
+fun TitleBar(statusBarPadding: Dp) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -82,18 +92,109 @@ fun TitleBar(statusBarPadding: Dp){
 
 private var showDialog by mutableStateOf(false)
 
-private fun addItem(){
+private fun addItem() {
     showDialog = true
 }
 
 @Composable
 fun WardrobeScreenContent() {
-    if (showDialog) {
-        AddWardrobeItemDialog(
-            onDismiss = { showDialog = false },
-            onUpload = { item ->
-                // Handle uploaded item (e.g., add to list)
+    val currentUserId = Firebase.auth.currentUser?.uid ?: return
+    var wardrobeItems by remember { mutableStateOf<List<WardrobeItem>>(emptyList()) }
+    var showDialog by remember { mutableStateOf(false) }
+    var selectedItem by remember { mutableStateOf<WardrobeItem?>(null) }
+
+    LaunchedEffect(currentUserId) {
+        val firestore = Firebase.firestore
+        firestore.collection("wardrobe")
+            .whereEqualTo("owner", currentUserId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.e("WardrobeScreen", "Error fetching items: ${error.message}")
+                    return@addSnapshotListener
+                }
+                wardrobeItems = snapshot?.documents?.mapNotNull { it.toObject(WardrobeItem::class.java) } ?: emptyList()
             }
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+
+        if (showDialog) {
+            AddWardrobeItemDialog(
+                onDismiss = { showDialog = false },
+                onUpload = { item ->
+                    wardrobeItems = wardrobeItems + item
+                }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(3),
+            contentPadding = PaddingValues(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items(wardrobeItems) { item ->
+                FrontImageCard(item) {
+                    selectedItem = item
+                }
+            }
+        }
+    }
+
+    if (selectedItem != null) {
+        WardrobeItemDetailDialog(item = selectedItem!!) {
+            selectedItem = null
+        }
+    }
+}
+
+@Composable
+fun FrontImageCard(item: WardrobeItem, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(180.dp)
+            .clickable { onClick() },
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+        AsyncImage(
+            model = item.frontImageUrl,
+            contentDescription = "Front Image",
+            modifier = Modifier.fillMaxSize()
         )
     }
+}
+
+@Composable
+fun WardrobeItemDetailDialog(item: WardrobeItem, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Wardrobe Item") },
+        text = {
+            Column {
+                AsyncImage(
+                    model = item.frontImageUrl,
+                    contentDescription = "Front Image",
+                    modifier = Modifier.fillMaxWidth().height(200.dp)
+                )
+                item.backImageUrl?.let {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    AsyncImage(
+                        model = it,
+                        contentDescription = "Back Image",
+                        modifier = Modifier.fillMaxWidth().height(200.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                Text("Condition: ${stringResource(item.condition.resId)}")
+                Text("Size: ${item.size.name}")
+            }
+        },
+        confirmButton = {
+            Button(onClick = onDismiss) { Text("Close") }
+        }
+    )
 }

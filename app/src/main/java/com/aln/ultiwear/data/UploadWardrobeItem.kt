@@ -2,6 +2,7 @@ package com.aln.ultiwear.data
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import com.aln.ultiwear.model.Condition
 import com.aln.ultiwear.model.Size
@@ -12,7 +13,7 @@ import com.google.firebase.firestore.firestore
 import com.google.firebase.storage.storage
 import java.util.UUID
 
-const val tag=  "AddWardrobeItemDialog: "
+const val tag = "AddWardrobeItemDialog: "
 fun uploadWardrobeItem(
     context: Context,
     frontUri: Uri,
@@ -27,11 +28,18 @@ fun uploadWardrobeItem(
 
     fun trySave() {
         if (frontUrl != null && (backUri == null || backUrl != null)) {
-            saveWardrobeItemToFirestore(id, condition, size, frontUrl!!, backUrl, onUploaded)
+            saveWardrobeItemToFirestore(
+                id = id,
+                ownerId = Firebase.auth.currentUser?.uid ?: "unknown",
+                condition = condition,
+                size = size,
+                frontUrl = frontUrl!!,
+                backUrl = backUrl,
+                onUploaded = onUploaded
+            )
         }
     }
 
-    // Upload front image
     uploadImage(context, frontUri, "wardrobe/$id/front.jpg") { url ->
         if (url != null) {
             frontUrl = url
@@ -41,9 +49,8 @@ fun uploadWardrobeItem(
         }
     }
 
-    // Upload back image if provided
-    if (backUri != null) {
-        uploadImage(context, backUri, "wardrobe/$id/back.jpg") { url ->
+    backUri?.let {
+        uploadImage(context, it, "wardrobe/$id/back.jpg") { url ->
             if (url != null) {
                 backUrl = url
                 trySave()
@@ -52,9 +59,8 @@ fun uploadWardrobeItem(
             }
         }
     }
-
-
 }
+
 
 private fun uploadImage(
     context: Context,
@@ -82,8 +88,9 @@ private fun uploadImage(
         }
 }
 
-private fun saveWardrobeItemToFirestore(
+fun saveWardrobeItemToFirestore(
     id: String,
+    ownerId: String,
     condition: Condition,
     size: Size,
     frontUrl: String,
@@ -91,20 +98,18 @@ private fun saveWardrobeItemToFirestore(
     onUploaded: (WardrobeItem) -> Unit
 ) {
     val firestore = Firebase.firestore
+
     val item = WardrobeItem(
         id = id,
-        owner = Firebase.auth.currentUser?.uid ?: "unknown",
-        condition = condition,
-        size = size,
+        owner = ownerId,
+        conditionStr = condition.name,
+        sizeStr = size.name,
         frontImageUrl = frontUrl,
         backImageUrl = backUrl
     )
 
-    firestore.collection("wardrobe")
-        .document(id)
+    firestore.collection("wardrobe").document(id)
         .set(item)
         .addOnSuccessListener { onUploaded(item) }
-        .addOnFailureListener { e ->
-            println(tag + "Failed to upload to firebase")
-        }
+        .addOnFailureListener { e -> Log.e(tag, "Upload failed", e) }
 }

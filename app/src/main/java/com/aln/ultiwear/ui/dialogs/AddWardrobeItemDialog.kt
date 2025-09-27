@@ -6,14 +6,20 @@ import android.net.Uri
 import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.aln.ultiwear.R
 import com.aln.ultiwear.data.uploadWardrobeItem
 import com.aln.ultiwear.model.Condition
 import com.aln.ultiwear.model.Size
@@ -40,22 +47,18 @@ fun AddWardrobeItemDialog(
     var selectedSize by remember { mutableStateOf<Size?>(null) }
     val context = LocalContext.current
 
-    // Launcher to pick image from gallery
-    val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        frontImageUri = uri
-    }
-
-    // Launcher to take a picture
+    // Launchers for camera
     var cameraUri by remember { mutableStateOf<Uri?>(null) }
-    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-        if (success) frontImageUri = cameraUri
-    }
+    val cameraLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+            if (success) frontImageUri = cameraUri
+        }
 
-    // Optional back photo launcher
     var backCameraUri by remember { mutableStateOf<Uri?>(null) }
-    val backCameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-        if (success) backImageUri = backCameraUri
-    }
+    val backCameraLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+            if (success) backImageUri = backCameraUri
+        }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -73,87 +76,123 @@ fun AddWardrobeItemDialog(
                         )
                         onDismiss()
                     }
-                }
-            ) { Text("Upload") }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.tertiary,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                )
+            ) { Text(stringResource(R.string.upload)) }
         },
-        dismissButton = { Button(onClick = onDismiss) { Text("Cancel") } },
-        title = { Text("Add Wardrobe Item") },
+        dismissButton = {
+            Button(
+                onClick = onDismiss, colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.tertiary,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                )
+            ) { Text(stringResource(R.string.cancel)) }
+        },
+        title = { Text(stringResource(R.string.wardrobe_add_item)) },
         text = {
-            Column {
-                // Front image selection
-                Button(onClick = { galleryLauncher.launch("image/*") }) {
-                    Text(if (frontImageUri == null) "Select Front Image from Gallery" else "Front Image Selected")
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                Button(onClick = {
+            UserInputs(
+                frontImageUri = frontImageUri,
+                backImageUri = backImageUri,
+                selectedCondition = selectedCondition,
+                selectedSize = selectedSize,
+                onFrontImageClick = {
                     cameraUri = createImageUri(context)
                     cameraLauncher.launch(cameraUri!!)
-                }) {
-                    Text(if (frontImageUri == null) "Take Front Photo" else "Front Image Selected")
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Optional back image
-                Button(onClick = {
+                },
+                onBackImageClick = {
                     backCameraUri = createImageUri(context)
                     backCameraLauncher.launch(backCameraUri!!)
-                }) {
-                    Text(if (backImageUri == null) "Take Back Photo (Optional)" else "Back Photo Selected")
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Condition dropdown
-                var conditionExpanded by remember { mutableStateOf(false) }
-                Box {
-                    Button(onClick = { conditionExpanded = true }) {
-                        Text(selectedCondition?.name ?: "Select Condition")
-                    }
-                    DropdownMenu(
-                        expanded = conditionExpanded,
-                        onDismissRequest = { conditionExpanded = false }
-                    ) {
-                        Condition.entries.forEach { condition ->
-                            DropdownMenuItem(
-                                text = { Text(stringResource(condition.resId))
-                                },
-                                onClick = {
-                                    selectedCondition = condition
-                                    conditionExpanded = false
-                                }
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Size dropdown
-                var sizeExpanded by remember { mutableStateOf(false) }
-                Box {
-                    Button(onClick = { sizeExpanded = true }) {
-                        Text(selectedSize?.name ?: "Select Size")
-                    }
-                    DropdownMenu(
-                        expanded = sizeExpanded,
-                        onDismissRequest = { sizeExpanded = false }
-                    ) {
-                        Size.entries.forEach { size ->
-                            DropdownMenuItem(
-                                text = { Text(size.name) },
-                                onClick = {
-                                    selectedSize = size
-                                    sizeExpanded = false
-                                }
-                            )
-                        }
-                    }
-                }
-            }
+                },
+                onConditionSelected = { selectedCondition = it },
+                onSizeSelected = { selectedSize = it }
+            )
         }
     )
 }
+
+@Composable
+fun UserInputs(
+    frontImageUri: Uri?,
+    backImageUri: Uri?,
+    selectedCondition: Condition?,
+    selectedSize: Size?,
+    onFrontImageClick: () -> Unit,
+    onBackImageClick: () -> Unit,
+    onConditionSelected: (Condition) -> Unit,
+    onSizeSelected: (Size) -> Unit
+) {
+    Column {
+        // Front photo button
+        Button(onClick = onFrontImageClick) {
+            Text(
+                if (frontImageUri == null) stringResource(R.string.wardrobe_front_picture)
+                else stringResource(R.string.wardrobe_front_picture_selected)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Back photo button
+        Button(onClick = onBackImageClick) {
+            Text(
+                if (backImageUri == null) stringResource(R.string.wardrobe_back_picture)
+                else stringResource(R.string.wardrobe_back_picture_selected)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Condition dropdown
+        var conditionExpanded by remember { mutableStateOf(false) }
+        Box {
+            Button(onClick = { conditionExpanded = true }) {
+                Text(selectedCondition?.name ?: stringResource(R.string.wardrobe_select_condition))
+            }
+            DropdownMenu(
+                expanded = conditionExpanded,
+                onDismissRequest = { conditionExpanded = false }
+            ) {
+                Condition.entries.forEach { condition ->
+                    DropdownMenuItem(
+                        text = { Text(stringResource(condition.resId)) },
+                        onClick = {
+                            onConditionSelected(condition)
+                            conditionExpanded = false
+                        }
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Size dropdown
+        var sizeExpanded by remember { mutableStateOf(false) }
+        Box {
+            Button(onClick = { sizeExpanded = true }) {
+                Text(selectedSize?.name ?: stringResource(R.string.wardrobe_select_size))
+            }
+            DropdownMenu(
+                expanded = sizeExpanded,
+                onDismissRequest = { sizeExpanded = false }
+            ) {
+                Size.entries.forEach { size ->
+                    DropdownMenuItem(
+                        text = { Text(size.name) },
+                        onClick = {
+                            onSizeSelected(size)
+                            sizeExpanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
 
 fun createImageUri(context: Context): Uri {
     val contentResolver = context.contentResolver
@@ -161,5 +200,7 @@ fun createImageUri(context: Context): Uri {
         put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
         put(MediaStore.Images.Media.DISPLAY_NAME, "temp_${System.currentTimeMillis()}.jpg")
     }
-    return contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)!!
+    return contentResolver.insert(
+        MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues
+    )!!
 }
