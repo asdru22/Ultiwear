@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.aln.ultiwear.R
+import com.aln.ultiwear.data.listenToWardrobeItems
 import com.aln.ultiwear.model.WardrobeItem
 import com.aln.ultiwear.ui.dialogs.AddWardrobeItemDialog
 import com.google.firebase.Firebase
@@ -28,6 +29,8 @@ import com.google.firebase.firestore.firestore
 
 @Composable
 fun WardrobeScreen() {
+    var showDialog by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -35,7 +38,9 @@ fun WardrobeScreen() {
     ) {
         val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
-        TitleBar(statusBarPadding)
+        TitleBar(statusBarPadding) {
+            showDialog = true
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -44,13 +49,13 @@ fun WardrobeScreen() {
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
         ) {
-            WardrobeScreenContent()
+            WardrobeScreenContent(showDialog, onDialogDismiss = { showDialog = false })
         }
     }
 }
 
 @Composable
-fun TitleBar(statusBarPadding: Dp) {
+fun TitleBar(statusBarPadding: Dp, onAddClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -74,13 +79,12 @@ fun TitleBar(statusBarPadding: Dp) {
                 color = MaterialTheme.colorScheme.onPrimary
             )
 
-            IconButton(onClick = { addItem() }) {
+            IconButton(onClick = onAddClick) {
                 Icon(
                     modifier = Modifier.background(
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
                         shape = RoundedCornerShape(16.dp)
                     ),
-
                     imageVector = Icons.Filled.Add,
                     contentDescription = "Add Item",
                     tint = MaterialTheme.colorScheme.onPrimary
@@ -90,37 +94,24 @@ fun TitleBar(statusBarPadding: Dp) {
     }
 }
 
-private var showDialog by mutableStateOf(false)
-
-private fun addItem() {
-    showDialog = true
-}
-
 @Composable
-fun WardrobeScreenContent() {
+fun WardrobeScreenContent(showDialog: Boolean, onDialogDismiss: () -> Unit) {
     val currentUserId = Firebase.auth.currentUser?.uid ?: return
     var wardrobeItems by remember { mutableStateOf<List<WardrobeItem>>(emptyList()) }
-    var showDialog by remember { mutableStateOf(false) }
     var selectedItem by remember { mutableStateOf<WardrobeItem?>(null) }
 
+    // Load items from Firestore
     LaunchedEffect(currentUserId) {
-        val firestore = Firebase.firestore
-        firestore.collection("wardrobe")
-            .whereEqualTo("owner", currentUserId)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    Log.e("WardrobeScreen", "Error fetching items: ${error.message}")
-                    return@addSnapshotListener
-                }
-                wardrobeItems = snapshot?.documents?.mapNotNull { it.toObject(WardrobeItem::class.java) } ?: emptyList()
-            }
+        listenToWardrobeItems(currentUserId) { items ->
+            wardrobeItems = items
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
 
         if (showDialog) {
             AddWardrobeItemDialog(
-                onDismiss = { showDialog = false },
+                onDismiss = onDialogDismiss,
                 onUpload = { item ->
                     wardrobeItems = wardrobeItems + item
                 }
@@ -150,6 +141,7 @@ fun WardrobeScreenContent() {
         }
     }
 }
+
 
 @Composable
 fun FrontImageCard(item: WardrobeItem, onClick: () -> Unit) {

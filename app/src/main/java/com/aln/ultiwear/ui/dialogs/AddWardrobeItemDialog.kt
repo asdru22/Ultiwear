@@ -79,7 +79,7 @@ fun AddWardrobeItemDialog(
                 },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.tertiary,
-                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                    contentColor = MaterialTheme.colorScheme.onTertiary
                 )
             ) { Text(stringResource(R.string.upload)) }
         },
@@ -87,7 +87,7 @@ fun AddWardrobeItemDialog(
             Button(
                 onClick = onDismiss, colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.tertiary,
-                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                    contentColor = MaterialTheme.colorScheme.onTertiary
                 )
             ) { Text(stringResource(R.string.cancel)) }
         },

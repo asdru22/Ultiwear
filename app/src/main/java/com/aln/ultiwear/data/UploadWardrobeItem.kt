@@ -13,7 +13,7 @@ import com.google.firebase.firestore.firestore
 import com.google.firebase.storage.storage
 import java.util.UUID
 
-const val tag = "AddWardrobeItemDialog: "
+const val tag = "Firebase Items: "
 fun uploadWardrobeItem(
     context: Context,
     frontUri: Uri,
@@ -112,4 +112,24 @@ fun saveWardrobeItemToFirestore(
         .set(item)
         .addOnSuccessListener { onUploaded(item) }
         .addOnFailureListener { e -> Log.e(tag, "Upload failed", e) }
+}
+
+// Use listeners for real time updates
+fun listenToWardrobeItems(
+    userId: String,
+    onItemsChanged: (List<WardrobeItem>) -> Unit
+) {
+    val firestore = Firebase.firestore
+    firestore.collection("wardrobe")
+        .whereEqualTo("owner", userId)
+        .addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                Log.e("WardrobeScreen", "Error fetching items: ${error.message}")
+                return@addSnapshotListener
+            }
+            val items = snapshot?.documents
+                ?.mapNotNull { it.toObject(WardrobeItem::class.java) }
+                ?: emptyList()
+            onItemsChanged(items)
+        }
 }
