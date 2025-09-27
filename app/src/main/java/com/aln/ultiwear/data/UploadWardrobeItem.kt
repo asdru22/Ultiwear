@@ -114,7 +114,7 @@ fun saveWardrobeItemToFirestore(
         .addOnFailureListener { e -> Log.e(tag, "Upload failed", e) }
 }
 
-// Use listeners for real time updates
+// the listener updates the items when there are changes in the database
 fun listenToWardrobeItems(
     userId: String,
     onItemsChanged: (List<WardrobeItem>) -> Unit

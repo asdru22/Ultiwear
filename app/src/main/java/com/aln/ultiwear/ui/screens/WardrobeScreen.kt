@@ -14,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -112,8 +113,8 @@ fun WardrobeScreenContent(showDialog: Boolean, onDialogDismiss: () -> Unit) {
         if (showDialog) {
             AddWardrobeItemDialog(
                 onDismiss = onDialogDismiss,
-                onUpload = { item ->
-                    wardrobeItems = wardrobeItems + item
+                onUpload = {
+                    // getting items is handled by the listener
                 }
             )
         }
@@ -148,13 +149,14 @@ fun FrontImageCard(item: WardrobeItem, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(180.dp)
+            .aspectRatio(1f) // Square card
             .clickable { onClick() },
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         AsyncImage(
             model = item.frontImageUrl,
             contentDescription = "Front Image",
+            contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
     }
