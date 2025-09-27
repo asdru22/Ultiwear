@@ -1,6 +1,7 @@
 package com.aln.ultiwear.data
 
 import android.content.Context
+import android.util.Log
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
@@ -19,20 +20,19 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
-import java.util.UUID
 import kotlin.coroutines.cancellation.CancellationException
 
 class GoogleAuthClient(
     private val context: Context,
 ) {
-    private val tag = "GoogleAuthClient: "
+    private val tag = "GoogleAuthClient"
     private val credentialManager = CredentialManager.create(context)
     private val firebaseAuth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
 
     fun isSingedIn(): Boolean {
         if (firebaseAuth.currentUser != null) {
-            println(tag + "already signed in")
+            Log.w(tag, "already signed in")
             return true
         }
         return false
@@ -50,7 +50,7 @@ class GoogleAuthClient(
             e.printStackTrace()
             if (e is CancellationException) throw e
 
-            println(tag + "sinIn error: ${e.message}")
+            Log.e(tag, "sign in error", e)
             return false
         }
     }
@@ -60,7 +60,7 @@ class GoogleAuthClient(
         if (credential !is CustomCredential ||
             credential.type != GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
         ) {
-            println(tag + "credential is not GoogleIdTokenCredential")
+            Log.w(tag, "credential is not GoogleIdTokenCredential")
             return false
         }
 
@@ -70,7 +70,7 @@ class GoogleAuthClient(
             checkAndRegisterUser(user)
             true
         } catch (e: GoogleIdTokenParsingException) {
-            println(tag + "GoogleIdTokenParsingException: ${e.message}")
+            Log.e(tag, "GoogleIdTokenParsingException", e)
             false
         }
     }
@@ -80,7 +80,7 @@ class GoogleAuthClient(
             val tokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
             GoogleAuthProvider.getCredential(tokenCredential.idToken, null)
         } catch (e: Exception) {
-            println(tag + "Failed to parse GoogleIdToken: ${e.message}")
+            Log.e(tag, "Failed to parse GoogleIdToken",e)
             null
         }
     }
@@ -99,7 +99,7 @@ class GoogleAuthClient(
         if (userRef.isEmpty) {
             registerNewUser(user)
         } else {
-            println(tag + "User already exists in Firestore")
+            Log.w(tag,"User already exists in Firestore")
         }
     }
 
@@ -111,7 +111,7 @@ class GoogleAuthClient(
             .set(newUser.toMap())
             .await()
 
-        println(tag + "New user registered with ID: $newUserId")
+        Log.i(tag, "New user registered with ID: $newUserId")
     }
 
     private suspend fun buildCredentialRequest(): GetCredentialResponse {

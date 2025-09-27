@@ -44,7 +44,7 @@ fun UltiwearTheme(
     }
 
     val bottomBarBackground = if (darkTheme) {
-        Color.Black.copy(alpha = 0.5f)
+        Color.Black.copy(alpha = 0.45f)
     } else {
         Color.White
     }

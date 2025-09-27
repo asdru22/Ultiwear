@@ -6,13 +6,9 @@ import android.net.Uri
 import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -67,7 +63,6 @@ fun AddWardrobeItemDialog(
                 onClick = {
                     if (frontImageUri != null && selectedCondition != null && selectedSize != null) {
                         uploadWardrobeItem(
-                            context,
                             frontImageUri!!,
                             backImageUri,
                             selectedCondition!!,
@@ -149,7 +144,8 @@ fun UserInputs(
         var conditionExpanded by remember { mutableStateOf(false) }
         Box {
             Button(onClick = { conditionExpanded = true }) {
-                Text(selectedCondition?.name ?: stringResource(R.string.wardrobe_select_condition))
+                if (selectedCondition != null) stringResource(selectedCondition.resId)
+                else stringResource(R.string.wardrobe_select_condition)
             }
             DropdownMenu(
                 expanded = conditionExpanded,

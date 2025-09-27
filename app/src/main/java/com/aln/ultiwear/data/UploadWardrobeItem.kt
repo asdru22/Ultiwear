@@ -1,9 +1,7 @@
 package com.aln.ultiwear.data
 
-import android.content.Context
 import android.net.Uri
 import android.util.Log
-import android.widget.Toast
 import com.aln.ultiwear.model.Condition
 import com.aln.ultiwear.model.Size
 import com.aln.ultiwear.model.WardrobeItem
@@ -15,7 +13,6 @@ import java.util.UUID
 
 const val tag = "Firebase Items: "
 fun uploadWardrobeItem(
-    context: Context,
     frontUri: Uri,
     backUri: Uri?,
     condition: Condition,
@@ -40,22 +37,22 @@ fun uploadWardrobeItem(
         }
     }
 
-    uploadImage(context, frontUri, "wardrobe/$id/front.jpg") { url ->
+    uploadImage(frontUri, "wardrobe/$id/front.jpg") { url ->
         if (url != null) {
             frontUrl = url
             trySave()
         } else {
-            Toast.makeText(context, "Front image upload failed", Toast.LENGTH_LONG).show()
+            Log.e(tag, "Front image upload failed")
         }
     }
 
     backUri?.let {
-        uploadImage(context, it, "wardrobe/$id/back.jpg") { url ->
+        uploadImage(it, "wardrobe/$id/back.jpg") { url ->
             if (url != null) {
                 backUrl = url
                 trySave()
             } else {
-                Toast.makeText(context, "Back image upload failed", Toast.LENGTH_LONG).show()
+                Log.e(tag, "Back image upload failed")
             }
         }
     }
@@ -63,7 +60,6 @@ fun uploadWardrobeItem(
 
 
 private fun uploadImage(
-    context: Context,
     uri: Uri,
     path: String,
     onComplete: (String?) -> Unit
@@ -74,17 +70,14 @@ private fun uploadImage(
             storageRef.downloadUrl.addOnSuccessListener { url ->
                 onComplete(url.toString())
             }.addOnFailureListener {
-                Toast.makeText(
-                    context,
-                    "Failed to get download URL: ${it.message}",
-                    Toast.LENGTH_LONG
-                ).show()
+                Log.e(
+                    tag, "Failed to get download URL: ${it.message}",
+                )
                 onComplete(null)
             }
         }
         .addOnFailureListener {
-            Toast.makeText(context, "Upload failed: ${it.message}", Toast.LENGTH_LONG).show()
-            onComplete(null)
+            Log.e(tag, "Upload failed: ${it.message}")
         }
 }
 

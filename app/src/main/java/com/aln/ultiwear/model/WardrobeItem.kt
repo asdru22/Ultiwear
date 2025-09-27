@@ -6,7 +6,7 @@ enum class Condition(val resId: Int) {
     NEW(R.string.condition_new),
     LIKE_NEW(R.string.condition_like_new),
     GOOD(R.string.condition_good),
-    FAIR(R.string.condition_ok),
+    OK(R.string.condition_ok),
     POOR(R.string.condition_poor)
 }
 
