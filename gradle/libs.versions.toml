@@ -17,6 +17,7 @@ firebaseBom = "34.3.0"
 gmsGoogleServices = "4.4.3"
 firebaseStorage = "22.0.1"
 firebaseFirestore = "26.0.1"
+materialIconsCore = "1.7.8"
 
 [libraries]
 
@@ -44,6 +45,7 @@ androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 firebase-storage = { group = "com.google.firebase", name = "firebase-storage", version.ref = "firebaseStorage" }
 firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore", version.ref = "firebaseFirestore" }
+androidx-compose-material-icons-core = { group = "androidx.compose.material", name = "material-icons-core", version.ref = "materialIconsCore" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

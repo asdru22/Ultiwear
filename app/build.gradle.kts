@@ -82,6 +82,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.firebase.storage)
     implementation(libs.firebase.firestore)
+    implementation(libs.androidx.compose.material.icons.core)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
