@@ -61,9 +61,7 @@ fun WardrobeScreen() {
 
                         val user = User(
                             id = "12345",
-                            name = "Mario Rossi",
                             email = "mario.rossi@email.com",
-                            profileImageUrl = uploadedImageUrl
                         )
                         addUserToFirestore(user)
                     }

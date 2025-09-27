@@ -2,7 +2,12 @@ package com.aln.ultiwear.model
 
 data class User(
     val id: String,
-    val name: String,
-    val email: String,
-    val profileImageUrl: String? = null
-)
+    val email: String
+) {
+    fun toMap(): Map<String, Any> {
+        return mapOf(
+            "id" to id,
+            "email" to email
+        )
+    }
+}
