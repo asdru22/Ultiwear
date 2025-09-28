@@ -22,8 +22,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -47,6 +45,7 @@ import com.aln.ultiwear.R
 import com.aln.ultiwear.data.listenToWardrobeItems
 import com.aln.ultiwear.model.WardrobeItem
 import com.aln.ultiwear.ui.dialogs.AddWardrobeItemDialog
+import com.aln.ultiwear.ui.dialogs.WardrobeItemDetailsDialog
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 
@@ -160,7 +159,7 @@ fun WardrobeScreenContent(showDialog: Boolean, onDialogDismiss: () -> Unit) {
     }
 
     if (selectedItem != null) {
-        WardrobeItemDetailDialog(item = selectedItem!!) {
+        WardrobeItemDetailsDialog(item = selectedItem!!) {
             selectedItem = null
         }
     }
@@ -185,33 +184,3 @@ fun FrontImageCard(item: WardrobeItem, onClick: () -> Unit) {
     }
 }
 
-@Composable
-fun WardrobeItemDetailDialog(item: WardrobeItem, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Wardrobe Item") },
-        text = {
-            Column {
-                AsyncImage(
-                    model = item.frontImageUrl,
-                    contentDescription = "Front Image",
-                    modifier = Modifier.fillMaxWidth().height(200.dp)
-                )
-                item.backImageUrl?.let {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    AsyncImage(
-                        model = it,
-                        contentDescription = "Back Image",
-                        modifier = Modifier.fillMaxWidth().height(200.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Text("Condition: ${stringResource(item.condition.resId)}")
-                Text("Size: ${item.size.name}")
-            }
-        },
-        confirmButton = {
-            Button(onClick = onDismiss) { Text("Close") }
-        }
-    )
-}

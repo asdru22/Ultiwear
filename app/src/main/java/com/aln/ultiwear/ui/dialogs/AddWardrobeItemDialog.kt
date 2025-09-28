@@ -144,8 +144,11 @@ fun UserInputs(
         var conditionExpanded by remember { mutableStateOf(false) }
         Box {
             Button(onClick = { conditionExpanded = true }) {
-                if (selectedCondition != null) stringResource(selectedCondition.resId)
-                else stringResource(R.string.wardrobe_select_condition)
+                if (selectedCondition != null) {
+                    Text(stringResource(selectedCondition.resId))
+                } else {
+                    Text(stringResource(R.string.wardrobe_select_condition))
+                }
             }
             DropdownMenu(
                 expanded = conditionExpanded,

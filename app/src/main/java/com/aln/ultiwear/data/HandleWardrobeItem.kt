@@ -11,7 +11,7 @@ import com.google.firebase.firestore.firestore
 import com.google.firebase.storage.storage
 import java.util.UUID
 
-const val tag = "Firebase Items: "
+const val tag = "HandleWardrobeItem"
 fun uploadWardrobeItem(
     frontUri: Uri,
     backUri: Uri?,
@@ -125,4 +125,16 @@ fun listenToWardrobeItems(
                 ?: emptyList()
             onItemsChanged(items)
         }
+}
+
+fun deleteWardrobeItemFromFirestore(
+    id: String,
+    onDeleted: () -> Unit
+) {
+    val firestore = Firebase.firestore
+
+    firestore.collection("wardrobe").document(id)
+        .delete()
+        .addOnSuccessListener { onDeleted() }
+        .addOnFailureListener { e -> Log.e("WardrobeScreen", "Delete failed", e) }
 }
