@@ -58,8 +58,14 @@ suspend fun uploadWardrobeItem(
 
     try {
         // upload front and back images in parallel
-        val frontDeferred = async { uploadImageAsync(frontUri, "wardrobe/$id/front.jpg") }
-        val backDeferred = backUri?.let { async { uploadImageAsync(it, "wardrobe/$id/back.jpg") } }
+        val frontDeferred = async {
+            uploadImageAsync(frontUri, "wardrobe/$id/front.jpg")
+        }
+        val backDeferred = backUri?.let {
+            async {
+                uploadImageAsync(it, "wardrobe/$id/back.jpg")
+            }
+        }
 
         val frontUrl = frontDeferred.await() ?: run {
             Log.e(tag, "Front image upload failed")
@@ -116,40 +122,44 @@ fun listenToWardrobeItems(
         }
 }
 
-fun deleteWardrobeItemFromFirestore(
-    id: String,
-    onDeleted: () -> Unit
-) {
+suspend fun deleteWardrobeItem(id: String) {
     val firestore: FirebaseFirestore = Firebase.firestore
+    try {
 
-    CoroutineScope(Dispatchers.IO).launch {
-        try {
-            // delete item
-            firestore.collection("wardrobe").document(id).delete().await()
-            Log.d(tag, "Wardrobe item deleted")
+        val snapshot = firestore.collection("wardrobe")
+            .document(id).get().await()
+        val item = snapshot.toObject(WardrobeItem::class.java)
 
-            // delete if post if present
-            val snapshot = firestore.collection("posts")
-                .whereEqualTo("wardrobeUid", id)
-                .limit(1)
-                .get()
-                .await()
-
-            if (snapshot.documents.isNotEmpty()) {
-                snapshot.documents[0].reference.delete().await()
-                Log.d(tag, "Associated post deleted")
-            }
-
-            // update ui
-            CoroutineScope(Dispatchers.Main).launch {
-                onDeleted()
-            }
-
-        } catch (e: Exception) {
-            Log.e(tag, "Failed to delete item or post", e)
-            CoroutineScope(Dispatchers.Main).launch {
-                onDeleted()
-            }
+        // delete images
+        item?.frontImageUrl?.let { url ->
+            Firebase.storage.getReferenceFromUrl(url).delete().await()
+            Log.d(tag, "Front image deleted")
         }
+        item?.backImageUrl?.let { url ->
+            Firebase.storage.getReferenceFromUrl(url).delete().await()
+            Log.d(tag, "Back image deleted")
+        }
+
+        // delete wardrobe document
+        firestore.collection("wardrobe")
+            .document(id).delete().await()
+        Log.d(tag, "Wardrobe item deleted")
+
+        // delete associated post if present
+        val postSnapshot = firestore.collection("posts")
+            .whereEqualTo("wardrobeUid", id)
+            .limit(1)
+            .get()
+            .await()
+
+        if (postSnapshot.documents.isNotEmpty()) {
+            postSnapshot.documents[0].reference.delete().await()
+            Log.d(tag, "Post deleted")
+        }
+
+    } catch (e: Exception) {
+        Log.e(tag, "Failed to delete item, images, or post", e)
+        throw e
     }
 }
+

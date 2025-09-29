@@ -1,5 +1,6 @@
 package com.aln.ultiwear.ui.dialogs
 
+import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,8 +16,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.aln.ultiwear.R
-import com.aln.ultiwear.data.deleteWardrobeItemFromFirestore
+import com.aln.ultiwear.data.deleteWardrobeItem
 import com.aln.ultiwear.model.WardrobeItem
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @Composable
 fun WardrobeItemDetailsDialog(
@@ -52,8 +56,14 @@ fun WardrobeItemDetailsDialog(
         dismissButton = {
             Button(
                 onClick = {
-                    deleteWardrobeItemFromFirestore(item.id) {
-                        onDismiss()
+                    // launch the coroutine in the main thread
+                    CoroutineScope(Dispatchers.Main).launch {
+                        try {
+                            deleteWardrobeItem(item.id)
+                            onDismiss()
+                        } catch (e: Exception) {
+                            Log.e("WardrobeScreen", "Failed to delete item", e)
+                        }
                     }
                 },
                 colors = ButtonDefaults.buttonColors(
