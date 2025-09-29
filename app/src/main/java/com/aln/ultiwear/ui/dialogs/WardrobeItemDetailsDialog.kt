@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.aln.ultiwear.R
 import com.aln.ultiwear.data.deleteWardrobeItemFromFirestore
 import com.aln.ultiwear.model.WardrobeItem
 
@@ -24,7 +25,7 @@ fun WardrobeItemDetailsDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Wardrobe Item") },
+        title = { Text(stringResource(R.string.wadrobe_dialog_title)) },
         text = {
             Column {
                 AsyncImage(
@@ -46,7 +47,7 @@ fun WardrobeItemDetailsDialog(
             }
         },
         confirmButton = {
-            Button(onClick = onDismiss) { Text("Close") }
+            Button(onClick = onDismiss) { Text(stringResource(R.string.close)) }
         },
         dismissButton = {
             Button(
@@ -59,7 +60,7 @@ fun WardrobeItemDetailsDialog(
                     containerColor = MaterialTheme.colorScheme.error
                 )
             ) {
-                Text("Delete")
+                Text(stringResource(R.string.delete))
             }
         }
     )

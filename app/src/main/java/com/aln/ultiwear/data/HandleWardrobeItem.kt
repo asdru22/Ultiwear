@@ -20,22 +20,30 @@ import kotlinx.coroutines.tasks.await
 import java.util.UUID
 
 const val tag = "HandleWardrobeItem"
-suspend fun uploadImageAsync(uri: Uri, path: String): String? = suspendCancellableCoroutine { cont ->
-    val storageRef = Firebase.storage.reference.child(path)
-    storageRef.putFile(uri)
-        .addOnSuccessListener {
-            storageRef.downloadUrl
-                .addOnSuccessListener { url -> cont.resume(url.toString(), null) }
-                .addOnFailureListener { e ->
-                    Log.e(tag, "Failed to get download URL: ${e.message}")
-                    cont.resume(null, null)
-                }
-        }
-        .addOnFailureListener { e ->
-            Log.e(tag, "Upload failed: ${e.message}")
-            cont.resume(null, null)
-        }
-}
+suspend fun uploadImageAsync(uri: Uri, path: String): String? =
+    suspendCancellableCoroutine { cont ->
+        val storageRef = Firebase.storage.reference.child(path)
+        storageRef.putFile(uri)
+            .addOnSuccessListener {
+                storageRef.downloadUrl
+                    .addOnSuccessListener { url ->
+                        cont.resume(url.toString())
+                        // suggested by android studio to avoid having to use
+                        // a deprecated method
+                        { cause, _, _ -> null?.let { it1 -> it1(cause) } }
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e(tag, "Failed to get download URL: ${e.message}")
+                        cont.resume(null)
+                        { cause, _, _ -> null?.let { it1 -> it1(cause) } }
+                    }
+            }
+            .addOnFailureListener { e ->
+                Log.e(tag, "Upload failed: ${e.message}")
+                cont.resume(null)
+                { cause, _, _ -> null?.let { it(cause) } }
+            }
+    }
 
 suspend fun uploadWardrobeItem(
     frontUri: Uri,
@@ -49,7 +57,7 @@ suspend fun uploadWardrobeItem(
     val ownerId = Firebase.auth.currentUser?.uid ?: "unknown"
 
     try {
-        // Upload front and back images in parallel
+        // upload front and back images in parallel
         val frontDeferred = async { uploadImageAsync(frontUri, "wardrobe/$id/front.jpg") }
         val backDeferred = backUri?.let { async { uploadImageAsync(it, "wardrobe/$id/back.jpg") } }
 
@@ -59,7 +67,7 @@ suspend fun uploadWardrobeItem(
         }
         val backUrl = backDeferred?.await()
 
-        // Save item to Firestore
+        // save item to Firestore
         val item = WardrobeItem(
             id = id,
             owner = ownerId,
@@ -76,9 +84,9 @@ suspend fun uploadWardrobeItem(
             .await()
         Log.d(tag, "Wardrobe item uploaded")
 
-        // Create post if needed
+        // create post if needed
         if (post) {
-            makePost(item) // can also be made suspendable if needed
+            makePost(item)
         }
 
         item
@@ -86,60 +94,6 @@ suspend fun uploadWardrobeItem(
         Log.e(tag, "Upload failed: ${e.message}")
         null
     }
-}
-
-
-private fun uploadImage(
-    uri: Uri,
-    path: String,
-    onComplete: (String?) -> Unit
-) {
-    val storageRef = Firebase.storage.reference.child(path)
-    storageRef.putFile(uri)
-        .addOnSuccessListener {
-            storageRef.downloadUrl.addOnSuccessListener { url ->
-                onComplete(url.toString())
-            }.addOnFailureListener {
-                Log.e(
-                    tag, "Failed to get download URL: ${it.message}",
-                )
-                onComplete(null)
-            }
-        }
-        .addOnFailureListener {
-            Log.e(tag, "Upload failed: ${it.message}")
-        }
-}
-
-fun saveWardrobeItemToFirestore(
-    id: String,
-    ownerId: String,
-    condition: Condition,
-    size: Size,
-    frontUrl: String,
-    backUrl: String?,
-    post: Boolean,
-    tradeable: Boolean,
-    onUploaded: (WardrobeItem) -> Unit
-): WardrobeItem {
-    val firestore = Firebase.firestore
-
-    val item = WardrobeItem(
-        id = id,
-        owner = ownerId,
-        conditionStr = condition.name,
-        sizeStr = size.name,
-        frontImageUrl = frontUrl,
-        backImageUrl = backUrl,
-        tradeable = tradeable,
-        posted = post
-    )
-
-    firestore.collection("wardrobe").document(id)
-        .set(item)
-        .addOnSuccessListener { onUploaded(item) }
-        .addOnFailureListener { e -> Log.e(tag, "Upload failed", e) }
-    return item
 }
 
 // the listener updates the items when there are changes in the database

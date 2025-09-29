@@ -22,4 +22,9 @@
     <string name="wardrobe_published">Published</string>
     <string name="wardrobe_tradeable">Tradeable</string>
     <string name="wardrobe_not_tradeable">Not Tradeable</string>
+    <string name="no_internet">Failed to connect to the internet</string>
+    <string name="try_again">Try again</string>
+    <string name="close">Close</string>
+    <string name="delete">Delete</string>
+    <string name="wadrobe_dialog_title">Wadrobe Item</string>
 </resources>
