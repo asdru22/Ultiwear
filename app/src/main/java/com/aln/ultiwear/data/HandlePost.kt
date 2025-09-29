@@ -7,11 +7,9 @@ import com.aln.ultiwear.model.WardrobeItem
 import com.google.firebase.Firebase
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.firestore
+import kotlinx.coroutines.tasks.await
 
-
-fun makePost(
-    item: WardrobeItem?,
-) {
+suspend fun makePost(item: WardrobeItem?) = try {
     val tag = "HandlePost"
     val firestore: FirebaseFirestore = Firebase.firestore
 
@@ -20,10 +18,12 @@ fun makePost(
         wardrobeUid = item?.id ?: "none",
         likes = 0
     )
-    firestore.collection("posts")
-        .document(postId)
+
+    firestore.collection("posts").document(postId)
         .set(newPost)
-        .addOnSuccessListener { Log.d(tag, "Post created") }
-        .addOnFailureListener { e -> Log.e(tag, "Failed to create post", e) }
+        .await() // suspend until complete
+    Log.d(tag, "Post created")
+} catch (e: Exception) {
+    Log.e("HandlePost", "Failed to create post", e)
 }
 

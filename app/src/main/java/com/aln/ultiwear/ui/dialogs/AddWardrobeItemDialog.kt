@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -38,6 +39,7 @@ import com.aln.ultiwear.data.uploadWardrobeItem
 import com.aln.ultiwear.model.Condition
 import com.aln.ultiwear.model.Size
 import com.aln.ultiwear.model.WardrobeItem
+import kotlinx.coroutines.launch
 
 @Composable
 fun AddWardrobeItemDialog(
@@ -54,16 +56,22 @@ fun AddWardrobeItemDialog(
 
     val context = LocalContext.current
 
+    // create a CoroutineScope tied to the composable's lifecycle
+    val coroutineScope = rememberCoroutineScope()
     // Launchers for camera
     var cameraUri by remember { mutableStateOf<Uri?>(null) }
     val cameraLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.TakePicture()
+        ) { success ->
             if (success) frontImageUri = cameraUri
         }
 
     var backCameraUri by remember { mutableStateOf<Uri?>(null) }
     val backCameraLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.TakePicture()
+        ) { success ->
             if (success) backImageUri = backCameraUri
         }
 
@@ -73,27 +81,34 @@ fun AddWardrobeItemDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    if (!isUploading && frontImageUri != null && selectedCondition != null && selectedSize != null) {
-                        isUploading = true  // block extra clicks
-                        uploadWardrobeItem(
-                            frontImageUri!!,
-                            backImageUri,
-                            selectedCondition!!,
-                            selectedSize!!,
-                            post,
-                            tradeable,
-                            onUploaded = { uploadedItem ->
-                                onUpload(uploadedItem)
+                    if (!isUploading && frontImageUri != null
+                        && selectedCondition != null
+                        && selectedSize != null
+                    ) {
+                        isUploading = true
+                        // start upload coroutine
+                        coroutineScope.launch {
+                            val uploadedItem = uploadWardrobeItem(
+                                frontUri = frontImageUri!!,
+                                backUri = backImageUri,
+                                condition = selectedCondition!!,
+                                size = selectedSize!!,
+                                post = post,
+                                tradeable = tradeable
+                            )
+                            uploadedItem?.let {
+                                onUpload(it)
                                 if (post) {
-                                    makePost(item = uploadedItem)
+                                    // make post is concurrent
+                                    launch { makePost(it) }
                                 }
-                                isUploading = false
-                                onDismiss()
                             }
-                        )
+                            isUploading = false
+                            onDismiss()
+                        }
                     }
                 },
-                enabled = !isUploading, // disable the button while uploading
+                enabled = !isUploading,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.tertiary,
                     contentColor = MaterialTheme.colorScheme.onTertiary
@@ -101,8 +116,7 @@ fun AddWardrobeItemDialog(
             ) {
                 if (isUploading) {
                     CircularProgressIndicator(
-                        modifier = Modifier
-                            .size(20.dp),
+                        modifier = Modifier.size(20.dp),
                         strokeWidth = 2.dp,
                         color = MaterialTheme.colorScheme.onTertiary
                     )
@@ -110,12 +124,11 @@ fun AddWardrobeItemDialog(
                     Text(stringResource(R.string.upload))
                 }
             }
-
-        }
-        ,
+        },
         dismissButton = {
             Button(
-                onClick = onDismiss, colors = ButtonDefaults.buttonColors(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.tertiary,
                     contentColor = MaterialTheme.colorScheme.onTertiary
                 )
@@ -128,7 +141,6 @@ fun AddWardrobeItemDialog(
                 textAlign = TextAlign.Center
             )
         },
-
         text = {
             UserInputs(
                 frontImageUri = frontImageUri,
@@ -143,16 +155,17 @@ fun AddWardrobeItemDialog(
                     backCameraUri = createImageUri(context)
                     backCameraLauncher.launch(backCameraUri!!)
                 },
-                onConditionSelected = { selectedCondition = it },
-                onSizeSelected = { selectedSize = it },
                 post = post,
                 onPostChanged = { post = it },
                 tradeable = tradeable,
-                onTradeableChanged = { tradeable = it }
+                onTradeableChanged = { tradeable = it },
+                onConditionSelected = { selectedCondition = it },
+                onSizeSelected = { selectedSize = it }
             )
         }
     )
 }
+
 
 // The content parameter is a lambda that takes a RowScope composable
 @Composable
@@ -265,14 +278,16 @@ fun UserInputs(
             Button(onClick = { onPostChanged(!post) }) {
                 Text(
                     fontSize = textSize,
-                    text = if (post) "Published" else "Post"
+                    text = if (post) stringResource(R.string.wardrobe_published) else
+                        stringResource(R.string.wardrobe_post)
                 )
             }
             if (post) {
                 Button(onClick = { onTradeableChanged(!tradeable) }) {
                     Text(
                         fontSize = textSize,
-                        text = if (tradeable) "Tradeable" else "Not tradeable"
+                        text = if (tradeable) stringResource(R.string.wardrobe_tradeable)
+                        else stringResource(R.string.wardrobe_not_tradeable)
                     )
                 }
             }

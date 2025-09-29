@@ -12,60 +12,80 @@ import com.google.firebase.firestore.firestore
 import com.google.firebase.storage.storage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
 import java.util.UUID
 
 const val tag = "HandleWardrobeItem"
-fun uploadWardrobeItem(
+suspend fun uploadImageAsync(uri: Uri, path: String): String? = suspendCancellableCoroutine { cont ->
+    val storageRef = Firebase.storage.reference.child(path)
+    storageRef.putFile(uri)
+        .addOnSuccessListener {
+            storageRef.downloadUrl
+                .addOnSuccessListener { url -> cont.resume(url.toString(), null) }
+                .addOnFailureListener { e ->
+                    Log.e(tag, "Failed to get download URL: ${e.message}")
+                    cont.resume(null, null)
+                }
+        }
+        .addOnFailureListener { e ->
+            Log.e(tag, "Upload failed: ${e.message}")
+            cont.resume(null, null)
+        }
+}
+
+suspend fun uploadWardrobeItem(
     frontUri: Uri,
     backUri: Uri?,
     condition: Condition,
     size: Size,
     post: Boolean,
-    tradeable: Boolean,
-    onUploaded: (WardrobeItem) -> Unit
-): WardrobeItem? {
+    tradeable: Boolean
+): WardrobeItem? = coroutineScope {
     val id = UUID.randomUUID().toString()
-    var frontUrl: String? = null
-    var backUrl: String? = null
-    var uploadedItem: WardrobeItem? = null
-    fun trySave() {
-        if (frontUrl != null && (backUri == null || backUrl != null)) {
-            uploadedItem = saveWardrobeItemToFirestore(
-                id = id,
-                ownerId = Firebase.auth.currentUser?.uid ?: "unknown",
-                condition = condition,
-                size = size,
-                frontUrl = frontUrl!!,
-                backUrl = backUrl,
-                onUploaded = onUploaded,
-                tradeable = tradeable,
-                post = post
-            )
-        }
-    }
+    val ownerId = Firebase.auth.currentUser?.uid ?: "unknown"
 
-    uploadImage(frontUri, "wardrobe/$id/front.jpg") { url ->
-        if (url != null) {
-            frontUrl = url
-            trySave()
-        } else {
+    try {
+        // Upload front and back images in parallel
+        val frontDeferred = async { uploadImageAsync(frontUri, "wardrobe/$id/front.jpg") }
+        val backDeferred = backUri?.let { async { uploadImageAsync(it, "wardrobe/$id/back.jpg") } }
+
+        val frontUrl = frontDeferred.await() ?: run {
             Log.e(tag, "Front image upload failed")
+            return@coroutineScope null
         }
-    }
+        val backUrl = backDeferred?.await()
 
-    backUri?.let {
-        uploadImage(it, "wardrobe/$id/back.jpg") { url ->
-            if (url != null) {
-                backUrl = url
-                trySave()
-            } else {
-                Log.e(tag, "Back image upload failed")
-            }
+        // Save item to Firestore
+        val item = WardrobeItem(
+            id = id,
+            owner = ownerId,
+            conditionStr = condition.name,
+            sizeStr = size.name,
+            frontImageUrl = frontUrl,
+            backImageUrl = backUrl,
+            tradeable = tradeable,
+            posted = post
+        )
+
+        Firebase.firestore.collection("wardrobe").document(id)
+            .set(item)
+            .await()
+        Log.d(tag, "Wardrobe item uploaded")
+
+        // Create post if needed
+        if (post) {
+            makePost(item) // can also be made suspendable if needed
         }
+
+        item
+    } catch (e: Exception) {
+        Log.e(tag, "Upload failed: ${e.message}")
+        null
     }
-    return uploadedItem
 }
 
 
