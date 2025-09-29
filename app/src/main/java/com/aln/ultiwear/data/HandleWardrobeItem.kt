@@ -7,8 +7,13 @@ import com.aln.ultiwear.model.Size
 import com.aln.ultiwear.model.WardrobeItem
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.firestore
 import com.google.firebase.storage.storage
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.util.UUID
 
 const val tag = "HandleWardrobeItem"
@@ -17,22 +22,26 @@ fun uploadWardrobeItem(
     backUri: Uri?,
     condition: Condition,
     size: Size,
+    post: Boolean,
+    tradeable: Boolean,
     onUploaded: (WardrobeItem) -> Unit
-) {
+): WardrobeItem? {
     val id = UUID.randomUUID().toString()
     var frontUrl: String? = null
     var backUrl: String? = null
-
+    var uploadedItem: WardrobeItem? = null
     fun trySave() {
         if (frontUrl != null && (backUri == null || backUrl != null)) {
-            saveWardrobeItemToFirestore(
+            uploadedItem = saveWardrobeItemToFirestore(
                 id = id,
                 ownerId = Firebase.auth.currentUser?.uid ?: "unknown",
                 condition = condition,
                 size = size,
                 frontUrl = frontUrl!!,
                 backUrl = backUrl,
-                onUploaded = onUploaded
+                onUploaded = onUploaded,
+                tradeable = tradeable,
+                post = post
             )
         }
     }
@@ -56,6 +65,7 @@ fun uploadWardrobeItem(
             }
         }
     }
+    return uploadedItem
 }
 
 
@@ -88,8 +98,10 @@ fun saveWardrobeItemToFirestore(
     size: Size,
     frontUrl: String,
     backUrl: String?,
+    post: Boolean,
+    tradeable: Boolean,
     onUploaded: (WardrobeItem) -> Unit
-) {
+): WardrobeItem {
     val firestore = Firebase.firestore
 
     val item = WardrobeItem(
@@ -98,13 +110,16 @@ fun saveWardrobeItemToFirestore(
         conditionStr = condition.name,
         sizeStr = size.name,
         frontImageUrl = frontUrl,
-        backImageUrl = backUrl
+        backImageUrl = backUrl,
+        tradeable = tradeable,
+        posted = post
     )
 
     firestore.collection("wardrobe").document(id)
         .set(item)
         .addOnSuccessListener { onUploaded(item) }
         .addOnFailureListener { e -> Log.e(tag, "Upload failed", e) }
+    return item
 }
 
 // the listener updates the items when there are changes in the database
@@ -131,10 +146,36 @@ fun deleteWardrobeItemFromFirestore(
     id: String,
     onDeleted: () -> Unit
 ) {
-    val firestore = Firebase.firestore
+    val firestore: FirebaseFirestore = Firebase.firestore
 
-    firestore.collection("wardrobe").document(id)
-        .delete()
-        .addOnSuccessListener { onDeleted() }
-        .addOnFailureListener { e -> Log.e("WardrobeScreen", "Delete failed", e) }
+    CoroutineScope(Dispatchers.IO).launch {
+        try {
+            // delete item
+            firestore.collection("wardrobe").document(id).delete().await()
+            Log.d(tag, "Wardrobe item deleted")
+
+            // delete if post if present
+            val snapshot = firestore.collection("posts")
+                .whereEqualTo("wardrobeUid", id)
+                .limit(1)
+                .get()
+                .await()
+
+            if (snapshot.documents.isNotEmpty()) {
+                snapshot.documents[0].reference.delete().await()
+                Log.d(tag, "Associated post deleted")
+            }
+
+            // update ui
+            CoroutineScope(Dispatchers.Main).launch {
+                onDeleted()
+            }
+
+        } catch (e: Exception) {
+            Log.e(tag, "Failed to delete item or post", e)
+            CoroutineScope(Dispatchers.Main).launch {
+                onDeleted()
+            }
+        }
+    }
 }

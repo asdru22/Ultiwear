@@ -16,6 +16,6 @@
     <string name="upload">Upload</string>
     <string name="cancel">Cancel</string>
     <string name="wardrobe_add_item">Add Item</string>
-    <string name="wardrobe_select_condition">Select Condition</string>
-    <string name="wardrobe_select_size">Select Size</string>
+    <string name="wardrobe_select_condition">Condition</string>
+    <string name="wardrobe_select_size">Size</string>
 </resources>

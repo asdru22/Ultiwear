@@ -6,13 +6,17 @@ import android.net.Uri
 import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
@@ -25,8 +29,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.aln.ultiwear.R
+import com.aln.ultiwear.data.makePost
 import com.aln.ultiwear.data.uploadWardrobeItem
 import com.aln.ultiwear.model.Condition
 import com.aln.ultiwear.model.Size
@@ -41,6 +48,10 @@ fun AddWardrobeItemDialog(
     var backImageUri by remember { mutableStateOf<Uri?>(null) }
     var selectedCondition by remember { mutableStateOf<Condition?>(null) }
     var selectedSize by remember { mutableStateOf<Size?>(null) }
+    var post by remember { mutableStateOf(false) }
+    var tradeable by remember { mutableStateOf(false) }
+    var isUploading by remember { mutableStateOf(false) }
+
     val context = LocalContext.current
 
     // Launchers for camera
@@ -57,27 +68,51 @@ fun AddWardrobeItemDialog(
         }
 
     AlertDialog(
+        modifier = Modifier.fillMaxWidth(),
         onDismissRequest = onDismiss,
         confirmButton = {
             Button(
                 onClick = {
-                    if (frontImageUri != null && selectedCondition != null && selectedSize != null) {
+                    if (!isUploading && frontImageUri != null && selectedCondition != null && selectedSize != null) {
+                        isUploading = true  // block extra clicks
                         uploadWardrobeItem(
                             frontImageUri!!,
                             backImageUri,
                             selectedCondition!!,
                             selectedSize!!,
-                            onUpload
+                            post,
+                            tradeable,
+                            onUploaded = { uploadedItem ->
+                                onUpload(uploadedItem)
+                                if (post) {
+                                    makePost(item = uploadedItem)
+                                }
+                                isUploading = false
+                                onDismiss()
+                            }
                         )
-                        onDismiss()
                     }
                 },
+                enabled = !isUploading, // disable the button while uploading
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.tertiary,
                     contentColor = MaterialTheme.colorScheme.onTertiary
                 )
-            ) { Text(stringResource(R.string.upload)) }
-        },
+            ) {
+                if (isUploading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onTertiary
+                    )
+                } else {
+                    Text(stringResource(R.string.upload))
+                }
+            }
+
+        }
+        ,
         dismissButton = {
             Button(
                 onClick = onDismiss, colors = ButtonDefaults.buttonColors(
@@ -86,7 +121,14 @@ fun AddWardrobeItemDialog(
                 )
             ) { Text(stringResource(R.string.cancel)) }
         },
-        title = { Text(stringResource(R.string.wardrobe_add_item)) },
+        title = {
+            Text(
+                text = stringResource(R.string.wardrobe_add_item),
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center
+            )
+        },
+
         text = {
             UserInputs(
                 frontImageUri = frontImageUri,
@@ -102,11 +144,28 @@ fun AddWardrobeItemDialog(
                     backCameraLauncher.launch(backCameraUri!!)
                 },
                 onConditionSelected = { selectedCondition = it },
-                onSizeSelected = { selectedSize = it }
+                onSizeSelected = { selectedSize = it },
+                post = post,
+                onPostChanged = { post = it },
+                tradeable = tradeable,
+                onTradeableChanged = { tradeable = it }
             )
         }
     )
 }
+
+// The content parameter is a lambda that takes a RowScope composable
+@Composable
+fun InputRow(content: @Composable RowScope.() -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        content = content
+    )
+}
+
+val textSize = 13.sp
+
 
 @Composable
 fun UserInputs(
@@ -117,74 +176,103 @@ fun UserInputs(
     onFrontImageClick: () -> Unit,
     onBackImageClick: () -> Unit,
     onConditionSelected: (Condition) -> Unit,
-    onSizeSelected: (Size) -> Unit
+    onSizeSelected: (Size) -> Unit,
+    post: Boolean,
+    onPostChanged: (Boolean) -> Unit,
+    tradeable: Boolean,
+    onTradeableChanged: (Boolean) -> Unit
 ) {
-    Column {
-        // Front photo button
-        Button(onClick = onFrontImageClick) {
-            Text(
-                if (frontImageUri == null) stringResource(R.string.wardrobe_front_picture)
-                else stringResource(R.string.wardrobe_front_picture_selected)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Back photo button
-        Button(onClick = onBackImageClick) {
-            Text(
-                if (backImageUri == null) stringResource(R.string.wardrobe_back_picture)
-                else stringResource(R.string.wardrobe_back_picture_selected)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Condition dropdown
-        var conditionExpanded by remember { mutableStateOf(false) }
-        Box {
-            Button(onClick = { conditionExpanded = true }) {
-                if (selectedCondition != null) {
-                    Text(stringResource(selectedCondition.resId))
-                } else {
-                    Text(stringResource(R.string.wardrobe_select_condition))
-                }
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // front and optional back picture
+        InputRow {
+            Button(onClick = onFrontImageClick) {
+                Text(
+                    fontSize = textSize,
+                    text = if (frontImageUri == null) stringResource(R.string.wardrobe_front_picture)
+                    else stringResource(R.string.wardrobe_front_picture_selected)
+                )
             }
-            DropdownMenu(
-                expanded = conditionExpanded,
-                onDismissRequest = { conditionExpanded = false }
-            ) {
-                Condition.entries.forEach { condition ->
-                    DropdownMenuItem(
-                        text = { Text(stringResource(condition.resId)) },
-                        onClick = {
-                            onConditionSelected(condition)
-                            conditionExpanded = false
-                        }
+
+            Button(onClick = onBackImageClick) {
+                Text(
+                    fontSize = textSize,
+                    text = if (backImageUri == null) stringResource(R.string.wardrobe_back_picture)
+                    else stringResource(R.string.wardrobe_back_picture_selected)
+                )
+            }
+        }
+
+        InputRow {
+            // condition dropdown
+            var conditionExpanded by remember { mutableStateOf(false) }
+            Box {
+                Button(onClick = { conditionExpanded = true }) {
+                    Text(
+                        fontSize = textSize,
+                        // run a lambda with select condition as the parameter
+                        text = selectedCondition?.let { stringResource(it.resId) }
+                            ?: stringResource(R.string.wardrobe_select_condition)
                     )
                 }
+                DropdownMenu(
+                    expanded = conditionExpanded,
+                    onDismissRequest = { conditionExpanded = false }
+                ) {
+                    Condition.entries.forEach { condition ->
+                        DropdownMenuItem(
+                            text = { Text(stringResource(condition.resId)) },
+                            onClick = {
+                                onConditionSelected(condition)
+                                conditionExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            // size dropdown
+            var sizeExpanded by remember { mutableStateOf(false) }
+            Box {
+                Button(
+                    onClick = { sizeExpanded = true }) {
+                    // sizes don't need translation
+                    Text(
+                        fontSize = textSize,
+                        text = selectedSize?.name ?: stringResource(R.string.wardrobe_select_size)
+                    )
+                }
+                DropdownMenu(
+                    expanded = sizeExpanded,
+                    onDismissRequest = { sizeExpanded = false }
+                ) {
+                    Size.entries.forEach { size ->
+                        DropdownMenuItem(
+                            text = { Text(size.name) },
+                            onClick = {
+                                onSizeSelected(size)
+                                sizeExpanded = false
+                            }
+                        )
+                    }
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Size dropdown
-        var sizeExpanded by remember { mutableStateOf(false) }
-        Box {
-            Button(onClick = { sizeExpanded = true }) {
-                Text(selectedSize?.name ?: stringResource(R.string.wardrobe_select_size))
+        // post and trade
+        InputRow {
+            Button(onClick = { onPostChanged(!post) }) {
+                Text(
+                    fontSize = textSize,
+                    text = if (post) "Published" else "Post"
+                )
             }
-            DropdownMenu(
-                expanded = sizeExpanded,
-                onDismissRequest = { sizeExpanded = false }
-            ) {
-                Size.entries.forEach { size ->
-                    DropdownMenuItem(
-                        text = { Text(size.name) },
-                        onClick = {
-                            onSizeSelected(size)
-                            sizeExpanded = false
-                        }
+            if (post) {
+                Button(onClick = { onTradeableChanged(!tradeable) }) {
+                    Text(
+                        fontSize = textSize,
+                        text = if (tradeable) "Tradeable" else "Not tradeable"
                     )
                 }
             }
