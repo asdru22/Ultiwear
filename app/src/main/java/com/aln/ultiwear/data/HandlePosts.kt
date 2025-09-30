@@ -65,11 +65,23 @@ suspend fun fetchPosts(limit: Long = 20): List<PostedWardrobeItem> = coroutineSc
     }
 }
 
-suspend fun toggleLike(postId: String, userId: String): Int {
+suspend fun toggleLike(wardrobeUid: String, userId: String): Int {
     val firestore = Firebase.firestore
-    val postRef = firestore.collection("posts").document(postId)
+
+    // find the post document for this wardrobeUid
+    val postQuery = firestore.collection("posts")
+        .whereEqualTo("wardrobeUid", wardrobeUid)
+        .limit(1)
+        .get()
+        .await()
+
+    val postDoc = postQuery.documents.firstOrNull()
+        ?: throw IllegalArgumentException("Post for wardrobeUid $wardrobeUid not found")
+
+    val postRef = postDoc.reference
     val likeRef = postRef.collection("likes").document(userId)
 
+    // atomic operation (avoids race conditions)
     return firestore.runTransaction { tx ->
         val postSnap = tx.get(postRef)
         var likeCount = postSnap.getLong("likes") ?: 0L
@@ -83,8 +95,28 @@ suspend fun toggleLike(postId: String, userId: String): Int {
             likeCount++
         }
 
-        // create the document if it doesnt exist
         tx.set(postRef, mapOf("likes" to likeCount), SetOptions.merge())
         likeCount.toInt()
     }.await()
+}
+
+suspend fun hasUserLiked(wardrobeUid: String, userId: String): Boolean {
+    val firestore = Firebase.firestore
+    // find post
+    val postQuery = firestore.collection("posts")
+        .whereEqualTo("wardrobeUid", wardrobeUid)
+        .limit(1)
+        .get()
+        .await()
+
+    val postDoc = postQuery.documents.firstOrNull() ?: return false
+
+    // find like
+    val likeSnap = postDoc.reference
+        .collection("likes")
+        .document(userId)
+        .get()
+        .await()
+
+    return likeSnap.exists()
 }

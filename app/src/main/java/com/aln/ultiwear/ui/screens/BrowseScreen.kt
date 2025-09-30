@@ -50,12 +50,12 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.aln.ultiwear.R
 import com.aln.ultiwear.data.fetchPosts
+import com.aln.ultiwear.data.hasUserLiked
 import com.aln.ultiwear.data.toggleLike
 import com.aln.ultiwear.model.PostedWardrobeItem
 import com.aln.ultiwear.model.WardrobeItem
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -130,9 +130,19 @@ fun BrowseScreenContent() {
         modifier = Modifier.fillMaxSize()
     ) {
         items(items) { combined ->
-            // like counter state
+            val currentUser = Firebase.auth.currentUser
             var likes by remember(combined.post?.wardrobeUid) {
                 mutableIntStateOf(combined.post?.likes ?: 0)
+            }
+
+            // check if the current user liked this post
+            var userLiked by remember {
+                mutableStateOf(false)
+            }
+            LaunchedEffect(Unit) {
+                if (currentUser != null && combined.post != null) {
+                    userLiked = hasUserLiked(combined.wardrobeUid, currentUser.uid)
+                }
             }
 
             Box(
@@ -143,18 +153,16 @@ fun BrowseScreenContent() {
                 WardrobeItemCard(
                     item = combined.wardrobeItem,
                     likes = likes,
+                    userLiked = userLiked,
                     onLikeClicked = {
-                        val currentUser = Firebase.auth.currentUser
-                        val postId = combined.post?.wardrobeUid
-
-                        if (currentUser != null && postId != null) {
+                        if (currentUser != null && combined.post != null) {
                             coroutineScope.launch {
                                 try {
                                     val newCount = withContext(Dispatchers.IO) {
-                                        toggleLike(postId, currentUser.uid)
+                                        toggleLike(combined.wardrobeUid, currentUser.uid)
                                     }
-                                    // if likes changes, recompose
                                     likes = newCount
+                                    userLiked = !userLiked
                                 } catch (e: Exception) {
                                     Log.e("Browse", "Error toggling like", e)
                                 }
@@ -172,6 +180,7 @@ fun BrowseScreenContent() {
 fun WardrobeItemCard(
     item: WardrobeItem,
     likes: Int,
+    userLiked: Boolean,
     onLikeClicked: () -> Unit,
     onTradeClicked: () -> Unit
 ) {
@@ -209,6 +218,7 @@ fun WardrobeItemCard(
                 likes = likes,
                 onLikeClicked = onLikeClicked,
                 onTradeClicked = onTradeClicked,
+                userLiked = userLiked,
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -220,6 +230,7 @@ fun WardrobeItemCard(
 fun WardrobeItemInfoBar(
     item: WardrobeItem,
     likes: Int,
+    userLiked: Boolean,
     onLikeClicked: () -> Unit,
     onTradeClicked: () -> Unit,
     modifier: Modifier = Modifier
@@ -230,34 +241,36 @@ fun WardrobeItemInfoBar(
             .fillMaxWidth()
             .padding(16.dp)
     ) {
-        // Size
+        // size
         OutlinedIconLabel(
             icon = R.drawable.size,
             text = item.sizeStr,
-            outlineColor = Color(0xFF4CAF50)
+            color = Color(0xFF4CAF50)
         )
 
-        // Condition
+        // condition
         OutlinedIconLabel(
             icon = R.drawable.condition,
             text = stringResource(item.condition.resId),
-            outlineColor = Color(0xFFFFC107)
+            color = Color(0xFFFFC107)
         )
 
-        // Likes
+        // likes
         OutlinedIconLabel(
             icon = R.drawable.like,
             text = likes.toString(),
-            outlineColor = Color(0xFFE91E63),
+            color = Color(0xFFE91E63),
+            selected = userLiked,
             onClick = onLikeClicked
         )
 
-        // Tradeable
+        // tradeable
         if (item.tradeable) {
             OutlinedIconLabel(
                 icon = R.drawable.trade_small,
                 text = "",
-                outlineColor = Color(0xFF2196F3),
+                color = Color(0xFF2196F3),
+                selected = false,
                 onClick = onTradeClicked
             )
         }
@@ -265,20 +278,27 @@ fun WardrobeItemInfoBar(
 }
 
 
+
 @Composable
 fun OutlinedIconLabel(
     icon: Int,
     text: String,
-    outlineColor: Color,
+    color: Color,
+    selected: Boolean = false,
     onClick: (() -> Unit)? = null
 ) {
+    val backgroundColor = if (selected) color else MaterialTheme.colorScheme.background
+    val contentColor = if (selected) MaterialTheme.colorScheme.background else color
+    val shape = RoundedCornerShape(12.dp)
+
     Box(
         modifier = Modifier
             .border(
                 width = 1.dp,
-                color = outlineColor,
-                shape = RoundedCornerShape(12.dp)
+                color = color,
+                shape = shape
             )
+            .background(color = backgroundColor, shape = shape)
             .clickable(enabled = onClick != null) { onClick?.invoke() }
             .padding(horizontal = 8.dp, vertical = 4.dp),
         contentAlignment = Alignment.Center
@@ -290,13 +310,13 @@ fun OutlinedIconLabel(
             Icon(
                 painter = painterResource(id = icon),
                 contentDescription = text,
-                tint = outlineColor,
+                tint = contentColor,
                 modifier = Modifier.size(16.dp)
             )
             if (text.isNotEmpty()) {
                 Text(
                     text = text,
-                    color = outlineColor,
+                    color = contentColor,
                     style = MaterialTheme.typography.bodySmall
                 )
             }
