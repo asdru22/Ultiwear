@@ -1,56 +1,30 @@
 package com.aln.ultiwear.data
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.net.Uri
 import android.util.Log
 import com.aln.ultiwear.model.Condition
-import com.aln.ultiwear.model.Post
-import com.aln.ultiwear.model.PostedWardrobeItem
 import com.aln.ultiwear.model.Size
 import com.aln.ultiwear.model.WardrobeItem
 import com.google.firebase.Firebase
+import com.google.firebase.app
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.firestore
 import com.google.firebase.storage.storage
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
+import java.io.ByteArrayOutputStream
 import java.util.UUID
 
-const val tag = "HandleWardrobeItem"
-suspend fun uploadImageAsync(uri: Uri, path: String): String? =
-    suspendCancellableCoroutine { cont ->
-        val storageRef = Firebase.storage.reference.child(path)
-        storageRef.putFile(uri)
-            .addOnSuccessListener {
-                storageRef.downloadUrl
-                    .addOnSuccessListener { url ->
-                        cont.resume(url.toString())
-                        // suggested by android studio to avoid having to use
-                        // a deprecated method
-                        { cause, _, _ -> null?.let { it1 -> it1(cause) } }
-                    }
-                    .addOnFailureListener { e ->
-                        Log.e(tag, "Failed to get download URL: ${e.message}")
-                        cont.resume(null)
-                        { cause, _, _ -> null?.let { it1 -> it1(cause) } }
-                    }
-            }
-            .addOnFailureListener { e ->
-                Log.e(tag, "Upload failed: ${e.message}")
-                cont.resume(null)
-                { cause, _, _ -> null?.let { it(cause) } }
-            }
-    }
+private const val tag = "HandleWardrobeItem"
 
 suspend fun uploadWardrobeItem(
     frontUri: Uri,
-    backUri: Uri?,
+    backUri: Uri? = null,
     condition: Condition,
     size: Size,
     post: Boolean,
@@ -62,12 +36,10 @@ suspend fun uploadWardrobeItem(
     try {
         // upload front and back images in parallel
         val frontDeferred = async {
-            uploadImageAsync(frontUri, "wardrobe/$id/front.jpg")
+            compressAndUpload(frontUri, "wardrobe/$id/front.webp")
         }
         val backDeferred = backUri?.let {
-            async {
-                uploadImageAsync(it, "wardrobe/$id/back.jpg")
-            }
+            async { compressAndUpload(it, "wardrobe/$id/back.webp") }
         }
 
         val frontUrl = frontDeferred.await() ?: run {
@@ -93,10 +65,7 @@ suspend fun uploadWardrobeItem(
             .await()
         Log.d(tag, "Wardrobe item uploaded")
 
-        // create post if needed
-        if (post) {
-            makePost(item)
-        }
+        if (post) makePost(item)
 
         item
     } catch (e: Exception) {
@@ -104,6 +73,37 @@ suspend fun uploadWardrobeItem(
         null
     }
 }
+
+private suspend fun compressAndUpload(uri: Uri, path: String): String? {
+    return try {
+        // load bitmap from uri
+        val inputStream = Firebase.app.applicationContext
+            .contentResolver.openInputStream(uri)
+            ?: throw IllegalArgumentException("Cannot open URI")
+        val bitmap = rotateBitmap(BitmapFactory.decodeStream(inputStream))
+
+        // compress to WebP
+        val baos = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.WEBP, 80, baos)
+        val bytes = baos.toByteArray()
+
+        // upload to firebase storage
+        val ref = Firebase.storage.reference.child(path)
+        ref.putBytes(bytes).await()
+        ref.downloadUrl.await().toString()
+    } catch (e: Exception) {
+        Log.e(tag, "compressAndUpload failed: ${e.message}")
+        null
+    }
+}
+
+
+private fun rotateBitmap(bitmap: Bitmap, degrees: Float=90.0f): Bitmap {
+    val matrix = Matrix()
+    matrix.postRotate(degrees)
+    return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+}
+
 
 // the listener updates the items when there are changes in the database
 fun listenToWardrobeItems(
@@ -115,7 +115,7 @@ fun listenToWardrobeItems(
         .whereEqualTo("owner", userId)
         .addSnapshotListener { snapshot, error ->
             if (error != null) {
-                Log.e("WardrobeScreen", "Error fetching items: ${error.message}")
+                Log.e(tag, "Error fetching items: ${error.message}")
                 return@addSnapshotListener
             }
             val items = snapshot?.documents
@@ -164,49 +164,4 @@ suspend fun deleteWardrobeItem(id: String) {
         Log.e(tag, "Failed to delete item, images, or post", e)
         throw e
     }
-}
-
-
-suspend fun makePost(item: WardrobeItem?) = try {
-    val firestore: FirebaseFirestore = Firebase.firestore
-
-    val postId = firestore.collection("posts").document().id
-    val newPost = Post(
-        wardrobeUid = item?.id ?: "none",
-        likes = 0
-    )
-
-    firestore.collection("posts").document(postId)
-        .set(newPost)
-        .await()
-    Log.d(tag, "Post created")
-} catch (e: Exception) {
-    Log.e("HandlePost", "Failed to create post", e)
-}
-
-suspend fun fetchPosts(limit: Long = 20): List<PostedWardrobeItem> = coroutineScope {
-    val firestore = Firebase.firestore
-
-    val snapshot = firestore.collection("wardrobe")
-        .limit(limit)
-        .get()
-        .await()
-
-    val wardrobeItems = snapshot.documents.mapNotNull { doc ->
-        doc.toObject(WardrobeItem::class.java)?.copy(id = doc.id)
-    }
-
-    // launch all post fetches concurrently
-    val deferredPosts = wardrobeItems.map { item ->
-        async {
-            val postDoc = firestore.collection("posts")
-                .document(item.id)
-                .get()
-                .await()
-            val post = postDoc.toObject(Post::class.java)
-            PostedWardrobeItem(item, post)
-        }
-    }
-
-    deferredPosts.awaitAll()
 }
