@@ -27,4 +27,5 @@
     <string name="close">Close</string>
     <string name="delete">Delete</string>
     <string name="wadrobe_dialog_title">Wadrobe Item</string>
+    <string name="browse">Browse</string>
 </resources>

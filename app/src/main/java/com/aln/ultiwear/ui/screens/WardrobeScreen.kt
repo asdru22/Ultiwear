@@ -61,7 +61,7 @@ fun WardrobeScreen() {
     ) {
         val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
-        TitleBar(statusBarPadding) {
+        WardrobeTitleBar(statusBarPadding) {
             showDialog = true
         }
 
@@ -78,7 +78,7 @@ fun WardrobeScreen() {
 }
 
 @Composable
-fun TitleBar(statusBarPadding: Dp, onAddClick: () -> Unit) {
+fun WardrobeTitleBar(statusBarPadding: Dp, onAddClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -120,7 +120,9 @@ fun TitleBar(statusBarPadding: Dp, onAddClick: () -> Unit) {
 @Composable
 fun WardrobeScreenContent(showDialog: Boolean, onDialogDismiss: () -> Unit) {
     val currentUserId = Firebase.auth.currentUser?.uid ?: return
-    var wardrobeItems by remember { mutableStateOf<List<WardrobeItem>>(emptyList()) }
+    var wardrobeItems by remember {
+        mutableStateOf<List<WardrobeItem>>(emptyList())
+    }
     var selectedItem by remember { mutableStateOf<WardrobeItem?>(null) }
 
     // Load items from Firestore

@@ -36,6 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aln.ultiwear.data.GoogleAuthClient
 import com.aln.ultiwear.model.TabItem
+import com.aln.ultiwear.ui.screens.BrowseScreen
 import com.aln.ultiwear.ui.screens.Footer
 import com.aln.ultiwear.ui.screens.LoginScreen
 import com.aln.ultiwear.ui.screens.SettingsScreen
@@ -120,7 +121,7 @@ fun AppWithBottomBar(
 ) {
     val tabs = listOf(
         TabItem("Wardrobe", R.drawable.wardrobe) { WardrobeScreen() },
-        TabItem("Social", R.drawable.social) { SocialScreen() },
+        TabItem("Social", R.drawable.social) { BrowseScreen() },
         TabItem("Trade", R.drawable.trade) { TradeScreen() },
         TabItem("Settings", R.drawable.settings) { SettingsScreen(onSignOut) }
     )
@@ -148,11 +149,6 @@ fun AppWithBottomBar(
             onTabSelected = { selectedIndex = it }
         )
     }
-}
-
-@Composable
-fun SocialScreen() {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Social") }
 }
 
 @Composable
