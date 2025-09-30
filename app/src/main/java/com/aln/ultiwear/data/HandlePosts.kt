@@ -9,11 +9,8 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.firestore
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.tasks.await
-import kotlin.collections.mapOf
 
 
 private const val tag = "HandlePosts"
@@ -38,30 +35,34 @@ suspend fun makePost(item: WardrobeItem?) = try {
 suspend fun fetchPosts(limit: Long = 20): List<PostedWardrobeItem> = coroutineScope {
     val firestore = Firebase.firestore
 
-    val snapshot = firestore.collection("wardrobe")
+    // fetch wardrobe items
+    val wardrobeSnapshot = firestore.collection("wardrobe")
         .limit(limit)
         .get()
         .await()
 
-    val wardrobeItems = snapshot.documents.mapNotNull { doc ->
+    val wardrobeItems = wardrobeSnapshot.documents.mapNotNull { doc ->
         doc.toObject(WardrobeItem::class.java)?.copy(id = doc.id)
     }
 
-    val deferredPosts = wardrobeItems.map { item ->
-        async {
-            val postQuery = firestore.collection("posts")
-                .whereEqualTo("wardrobeUid", item.id)
-                .limit(1)
-                .get()
-                .await()
+    // fetch posts
+    val postsSnapshot = firestore.collection("posts")
+        .whereIn("wardrobeUid", wardrobeItems.map { it.id })
+        .get()
+        .await()
 
-            val post = postQuery.documents.firstOrNull()?.toObject(Post::class.java)
+    val postsByWardrobeUid = postsSnapshot.documents.mapNotNull { doc ->
+        doc.toObject(Post::class.java)?.let { it.wardrobeUid to it }
+    }.toMap()
 
-            PostedWardrobeItem(item, post)
-        }
+    // combine
+    wardrobeItems.map { item ->
+        PostedWardrobeItem(
+            wardrobeItem = item,
+            post = postsByWardrobeUid[item.id],
+            wardrobeUid = item.id
+        )
     }
-
-    deferredPosts.awaitAll()
 }
 
 suspend fun toggleLike(postId: String, userId: String): Int {
