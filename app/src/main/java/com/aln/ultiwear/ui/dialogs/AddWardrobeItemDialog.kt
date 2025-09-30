@@ -40,6 +40,7 @@ import com.aln.ultiwear.model.Condition
 import com.aln.ultiwear.model.Size
 import com.aln.ultiwear.model.WardrobeItem
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.yield
 
 @Composable
 fun AddWardrobeItemDialog(
@@ -86,8 +87,12 @@ fun AddWardrobeItemDialog(
                         && selectedSize != null
                     ) {
                         isUploading = true
-                        // start upload coroutine
+
                         coroutineScope.launch {
+                            // momentarily suspend the coroutine to run others
+                            // allowing recompositions triggered by isUplodaing==true
+                            yield()
+
                             val uploadedItem = uploadWardrobeItem(
                                 frontUri = frontImageUri!!,
                                 backUri = backImageUri,
@@ -96,13 +101,14 @@ fun AddWardrobeItemDialog(
                                 post = post,
                                 tradeable = tradeable
                             )
+
                             uploadedItem?.let {
                                 onUpload(it)
                                 if (post) {
-                                    // make post is concurrent
-                                    launch { makePost(it) }
+                                    launch { makePost(it) } // make the post concurrently
                                 }
                             }
+
                             isUploading = false
                             onDismiss()
                         }
