@@ -25,8 +25,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -41,19 +39,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.aln.ultiwear.R
-import com.aln.ultiwear.model.Post
+import com.aln.ultiwear.data.fetchPosts
 import com.aln.ultiwear.model.PostedWardrobeItem
 import com.aln.ultiwear.model.WardrobeItem
-import com.google.firebase.Firebase
-import com.google.firebase.firestore.firestore
-import kotlinx.coroutines.tasks.await
 
 @Composable
 fun BrowseScreen() {
@@ -110,27 +105,12 @@ fun BrowseTitleBar(statusBarPadding: Dp) {
 
 @Composable
 fun BrowseScreenContent() {
-    var items by remember { mutableStateOf<List<PostedWardrobeItem>>(emptyList()) }
+    var items by remember {
+        mutableStateOf<List<PostedWardrobeItem>>(emptyList())
+    }
 
     LaunchedEffect(Unit) {
-        val firestore = Firebase.firestore
-        val snapshot = firestore.collection("wardrobe")
-            .limit(20)
-            .get()
-            .await()
-
-        val wardrobeItems = snapshot.documents.mapNotNull { doc ->
-            doc.toObject(WardrobeItem::class.java)?.copy(id = doc.id)
-        }
-
-        val posts = wardrobeItems.map { item ->
-            val postDoc = firestore.collection("posts")
-                .document(item.id).get().await()
-            val post = postDoc.toObject(Post::class.java)
-            PostedWardrobeItem(item, post)
-        }
-
-        items = posts
+        items = fetchPosts()
     }
 
     val listState = rememberLazyListState()
@@ -221,23 +201,23 @@ fun WardrobeItemInfoBar(
             .fillMaxWidth()
             .padding(16.dp)
     ) {
-        // Fit
+        // Size
         OutlinedIconLabel(
-            icon = Icons.Default.Star,
-            text = stringResource(item.condition.resId),
+            icon = R.drawable.size,
+            text = item.sizeStr,
             outlineColor = Color(0xFF4CAF50)
         )
 
         // Condition
         OutlinedIconLabel(
-            icon = Icons.Default.Star,
-            text = item.conditionStr,
+            icon = R.drawable.condition,
+            text = stringResource(item.condition.resId),
             outlineColor = Color(0xFFFFC107)
         )
 
         // Likes
         OutlinedIconLabel(
-            icon = Icons.Default.Star,
+            icon = R.drawable.like,
             text = likes.toString(),
             outlineColor = Color(0xFFE91E63),
             onClick = onLikeClicked
@@ -246,7 +226,7 @@ fun WardrobeItemInfoBar(
         // Tradeable
         if (item.tradeable) {
             OutlinedIconLabel(
-                icon = Icons.Default.Star,
+                icon = R.drawable.trade_small,
                 text = "",
                 outlineColor = Color(0xFF2196F3),
                 onClick = onTradeClicked
@@ -258,7 +238,7 @@ fun WardrobeItemInfoBar(
 
 @Composable
 fun OutlinedIconLabel(
-    icon: ImageVector,
+    icon: Int,
     text: String,
     outlineColor: Color,
     onClick: (() -> Unit)? = null
@@ -279,7 +259,7 @@ fun OutlinedIconLabel(
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Icon(
-                imageVector = icon,
+                painter = painterResource(id = icon),
                 contentDescription = text,
                 tint = outlineColor,
                 modifier = Modifier.size(16.dp)
