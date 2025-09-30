@@ -5,12 +5,15 @@ import com.aln.ultiwear.model.Post
 import com.aln.ultiwear.model.PostedWardrobeItem
 import com.aln.ultiwear.model.WardrobeItem
 import com.google.firebase.Firebase
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.tasks.await
+import kotlin.collections.mapOf
 
 
 private const val tag = "HandlePosts"
@@ -44,17 +47,43 @@ suspend fun fetchPosts(limit: Long = 20): List<PostedWardrobeItem> = coroutineSc
         doc.toObject(WardrobeItem::class.java)?.copy(id = doc.id)
     }
 
-    // launch all post fetches concurrently
     val deferredPosts = wardrobeItems.map { item ->
         async {
-            val postDoc = firestore.collection("posts")
-                .document(item.id)
+            val postQuery = firestore.collection("posts")
+                .whereEqualTo("wardrobeUid", item.id)
+                .limit(1)
                 .get()
                 .await()
-            val post = postDoc.toObject(Post::class.java)
+
+            val post = postQuery.documents.firstOrNull()?.toObject(Post::class.java)
+
             PostedWardrobeItem(item, post)
         }
     }
 
     deferredPosts.awaitAll()
+}
+
+suspend fun toggleLike(postId: String, userId: String): Int {
+    val firestore = Firebase.firestore
+    val postRef = firestore.collection("posts").document(postId)
+    val likeRef = postRef.collection("likes").document(userId)
+
+    return firestore.runTransaction { tx ->
+        val postSnap = tx.get(postRef)
+        var likeCount = postSnap.getLong("likes") ?: 0L
+
+        val likeSnap = tx.get(likeRef)
+        if (likeSnap.exists()) {
+            tx.delete(likeRef)
+            likeCount--
+        } else {
+            tx.set(likeRef, mapOf("createdAt" to FieldValue.serverTimestamp()))
+            likeCount++
+        }
+
+        // create the document if it doesnt exist
+        tx.set(postRef, mapOf("likes" to likeCount), SetOptions.merge())
+        likeCount.toInt()
+    }.await()
 }

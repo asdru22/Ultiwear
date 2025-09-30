@@ -1,5 +1,6 @@
 package com.aln.ultiwear.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -33,8 +34,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,8 +50,15 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.aln.ultiwear.R
 import com.aln.ultiwear.data.fetchPosts
+import com.aln.ultiwear.data.toggleLike
 import com.aln.ultiwear.model.PostedWardrobeItem
 import com.aln.ultiwear.model.WardrobeItem
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun BrowseScreen() {
@@ -105,13 +115,10 @@ fun BrowseTitleBar(statusBarPadding: Dp) {
 
 @Composable
 fun BrowseScreenContent() {
-    var items by remember {
-        mutableStateOf<List<PostedWardrobeItem>>(emptyList())
-    }
+    val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) {
-        items = fetchPosts()
-    }
+    var items by remember { mutableStateOf<List<PostedWardrobeItem>>(emptyList()) }
+    LaunchedEffect(Unit) { items = fetchPosts() }
 
     val listState = rememberLazyListState()
     val flingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
@@ -123,21 +130,43 @@ fun BrowseScreenContent() {
         modifier = Modifier.fillMaxSize()
     ) {
         items(items) { combined ->
+            // like counter state
+            var likes by remember(combined.post?.wardrobeUid) {
+                mutableIntStateOf(combined.post?.likes ?: 0)
+            }
+
             Box(
                 Modifier
                     .fillParentMaxHeight()
                     .wrapContentHeight()
             ) {
                 WardrobeItemCard(
-                    combined.wardrobeItem,
-                    combined.post?.likes ?: 0,
-                    {},
-                    {})
+                    item = combined.wardrobeItem,
+                    likes = likes,
+                    onLikeClicked = {
+                        val currentUser = Firebase.auth.currentUser
+                        val postId = combined.post?.wardrobeUid
+
+                        if (currentUser != null && postId != null) {
+                            coroutineScope.launch {
+                                try {
+                                    val newCount = withContext(Dispatchers.IO) {
+                                        toggleLike(postId, currentUser.uid)
+                                    }
+                                    // if likes changes, recompose
+                                    likes = newCount
+                                } catch (e: Exception) {
+                                    Log.e("Browse", "Error toggling like", e)
+                                }
+                            }
+                        }
+                    },
+                    onTradeClicked = {}
+                )
             }
         }
     }
 }
-
 
 @Composable
 fun WardrobeItemCard(
