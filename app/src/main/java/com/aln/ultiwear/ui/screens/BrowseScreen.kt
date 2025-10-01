@@ -117,7 +117,9 @@ fun BrowseTitleBar(statusBarPadding: Dp) {
 fun BrowseScreenContent() {
     val coroutineScope = rememberCoroutineScope()
 
-    var items by remember { mutableStateOf<List<PostedWardrobeItem>>(emptyList()) }
+    var items by remember {
+        mutableStateOf<List<PostedWardrobeItem>>(emptyList())
+    }
     LaunchedEffect(Unit) { items = fetchPosts() }
 
     val listState = rememberLazyListState()
@@ -141,9 +143,14 @@ fun BrowseScreenContent() {
             }
             LaunchedEffect(Unit) {
                 if (currentUser != null && combined.post != null) {
-                    userLiked = hasUserLiked(combined.wardrobeUid, currentUser.uid)
+                    userLiked = hasUserLiked(
+                        combined.wardrobeUid,
+                        currentUser.uid
+                    )
                 }
             }
+            // check if current user is the post owner
+            val isOwner = currentUser?.uid == combined.wardrobeItem.owner
 
             Box(
                 Modifier
@@ -154,12 +161,16 @@ fun BrowseScreenContent() {
                     item = combined.wardrobeItem,
                     likes = likes,
                     userLiked = userLiked,
+                    isOwner = isOwner,
                     onLikeClicked = {
                         if (currentUser != null && combined.post != null) {
                             coroutineScope.launch {
                                 try {
                                     val newCount = withContext(Dispatchers.IO) {
-                                        toggleLike(combined.wardrobeUid, currentUser.uid)
+                                        toggleLike(
+                                            combined.wardrobeUid,
+                                            currentUser.uid
+                                        )
                                     }
                                     likes = newCount
                                     userLiked = !userLiked
@@ -182,7 +193,8 @@ fun WardrobeItemCard(
     likes: Int,
     userLiked: Boolean,
     onLikeClicked: () -> Unit,
-    onTradeClicked: () -> Unit
+    onTradeClicked: () -> Unit,
+    isOwner: Boolean
 ) {
     Card(
         modifier = Modifier
@@ -195,7 +207,10 @@ fun WardrobeItemCard(
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
     ) {
         Column {
-            val imageUrls = listOfNotNull(item.frontImageUrl, item.backImageUrl)
+            val imageUrls = listOfNotNull(
+                item.frontImageUrl,
+                item.backImageUrl
+            )
             val pagerState = rememberPagerState(pageCount = { imageUrls.size })
 
             HorizontalPager(
@@ -219,7 +234,8 @@ fun WardrobeItemCard(
                 onLikeClicked = onLikeClicked,
                 onTradeClicked = onTradeClicked,
                 userLiked = userLiked,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                isOwner = isOwner
             )
         }
     }
@@ -233,7 +249,8 @@ fun WardrobeItemInfoBar(
     userLiked: Boolean,
     onLikeClicked: () -> Unit,
     onTradeClicked: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isOwner: Boolean
 ) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -255,28 +272,33 @@ fun WardrobeItemInfoBar(
             color = Color(0xFFFFC107)
         )
 
+        val likeColor =
+            if (isOwner) Color(0xFFE91E63).copy(alpha = 0.4f)
+            else Color(0xFFE91E63)
         // likes
         OutlinedIconLabel(
             icon = R.drawable.like,
             text = likes.toString(),
-            color = Color(0xFFE91E63),
+            color = likeColor,
             selected = userLiked,
-            onClick = onLikeClicked
+            onClick = if (isOwner) null else onLikeClicked
         )
 
         // tradeable
         if (item.tradeable) {
+            val tradeColor =
+                if (isOwner) Color(0xFF2196F3).copy(alpha = 0.4f)
+                else Color(0xFF2196F3)
             OutlinedIconLabel(
                 icon = R.drawable.trade_small,
                 text = "",
-                color = Color(0xFF2196F3),
+                color = tradeColor,
                 selected = false,
-                onClick = onTradeClicked
+                onClick = if (isOwner) null else onTradeClicked
             )
         }
     }
 }
-
 
 
 @Composable
