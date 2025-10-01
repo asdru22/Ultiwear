@@ -43,7 +43,9 @@ suspend fun fetchPosts(limit: Long = 20): List<PostedWardrobeItem> = coroutineSc
 
     val wardrobeItems = wardrobeSnapshot.documents.mapNotNull { doc ->
         doc.toObject(WardrobeItem::class.java)?.copy(id = doc.id)
-    }
+    } .filter { it.posted } // only fetch posted items
+
+    if (wardrobeItems.isEmpty()) return@coroutineScope emptyList()
 
     // fetch posts
     val postsSnapshot = firestore.collection("posts")
