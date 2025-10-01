@@ -53,7 +53,7 @@ fun WardrobeScreen() {
     ) {
         TopBar(
             title = stringResource(R.string.wardrobe),
-            action = {
+            content = {
                 IconButton(onClick = { showDialog = true }) {
                     Icon(
                         imageVector = Icons.Filled.Add,

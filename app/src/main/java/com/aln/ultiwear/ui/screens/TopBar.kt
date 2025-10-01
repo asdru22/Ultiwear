@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,7 +28,7 @@ fun TopBar(
     backgroundColor: Color = MaterialTheme.colorScheme.background,
     contentColor: Color = MaterialTheme.colorScheme.onBackground,
     shape: Shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp),
-    action: (@Composable () -> Unit)? = null
+    content: @Composable RowScope.() -> Unit = {}
 ) {
     Box(
         modifier = modifier
@@ -48,15 +49,11 @@ fun TopBar(
                 color = contentColor
             )
 
-            // consistent spacing even if action is null
-            Box(
-                modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                if (action != null) {
-                    action()
-                }
-            }
+            Row(
+                modifier = Modifier.sizeIn(minHeight = 48.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                content = content
+            )
         }
     }
 }
