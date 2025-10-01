@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -38,6 +39,7 @@ fun TopBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
@@ -46,8 +48,14 @@ fun TopBar(
                 color = contentColor
             )
 
-            if (action != null) {
-                action()
+            // consistent spacing even if action is null
+            Box(
+                modifier = Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (action != null) {
+                    action()
+                }
             }
         }
     }
