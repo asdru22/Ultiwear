@@ -18,10 +18,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,12 +39,14 @@ import androidx.compose.ui.unit.dp
 import com.aln.ultiwear.data.GoogleAuthClient
 import com.aln.ultiwear.model.TabItem
 import com.aln.ultiwear.ui.screens.BrowseScreen
+import com.aln.ultiwear.ui.screens.EventScreen
 import com.aln.ultiwear.ui.screens.Footer
 import com.aln.ultiwear.ui.screens.LoginScreen
 import com.aln.ultiwear.ui.screens.SettingsScreen
 import com.aln.ultiwear.ui.screens.WardrobeScreen
 import com.aln.ultiwear.ui.theme.LocalBottomBarBackground
 import com.aln.ultiwear.ui.theme.UltiwearTheme
+import com.aln.ultiwear.viewModel.EventViewModel
 
 class MainActivity : ComponentActivity() {
 
@@ -52,6 +56,8 @@ class MainActivity : ComponentActivity() {
         val googleAuthClient = GoogleAuthClient(this)
 
         setContent {
+            val vm = EventViewModel()
+
             UltiwearTheme {
                 var isSignedIn by rememberSaveable {
                     mutableStateOf(googleAuthClient.isSingedIn())
@@ -73,7 +79,7 @@ class MainActivity : ComponentActivity() {
                         }
 
                         isSignedIn -> {
-                            AppWithBottomBar(onSignOut = { isSignedIn = false })
+                            AppWithBottomBar(onSignOut = { isSignedIn = false }, viewModel = vm)
                         }
 
                         else -> {
@@ -117,39 +123,45 @@ fun NoInternetScreen(onRetry: () -> Unit) {
 
 @Composable
 fun AppWithBottomBar(
+    viewModel: EventViewModel,
     onSignOut: () -> Unit
 ) {
+    var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
+
     val tabs = listOf(
         TabItem("Wardrobe", R.drawable.wardrobe) { WardrobeScreen() },
         TabItem("Social", R.drawable.social) { BrowseScreen() },
-        TabItem("Trade", R.drawable.trade) { TradeScreen() },
+        TabItem("Trade", R.drawable.trade) { EventScreen(viewModel) },
         TabItem("Settings", R.drawable.settings) { SettingsScreen(onSignOut) }
     )
 
-    var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        // Content of the selected tab
-        tabs[selectedIndex].content()
-
-        Footer(
-            Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-                .padding(
-                    bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-                )
-                .background(
-                    color = LocalBottomBarBackground.current,
-                    shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
-                )
-                .padding(vertical = 8.dp),
-            tabs,
-            selectedIndex,
-            onTabSelected = { selectedIndex = it }
-        )
+    Scaffold(
+        bottomBar = {
+            Footer(
+                Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .background(
+                        color = LocalBottomBarBackground.current,
+                        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+                    )
+                    .padding(vertical = 8.dp),
+                tabs,
+                selectedIndex,
+                onTabSelected = { selectedIndex = it }
+            )
+        }
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            tabs[selectedIndex].content()
+        }
     }
 }
+
 
 @Composable
 fun TradeScreen() {

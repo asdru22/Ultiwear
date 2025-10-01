@@ -59,11 +59,18 @@ fun WardrobeScreen() {
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-
-        WardrobeTitleBar(statusBarPadding) {
-            showDialog = true
-        }
+        TopBar(
+            title = stringResource(R.string.wardrobe),
+            action = {
+                IconButton(onClick = { showDialog = true }) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = "Add Item",
+                        tint = MaterialTheme.colorScheme.onBackground
+                    )
+                }
+            }
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -77,45 +84,6 @@ fun WardrobeScreen() {
     }
 }
 
-@Composable
-fun WardrobeTitleBar(statusBarPadding: Dp, onAddClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.primary)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    start = 16.dp,
-                    end = 16.dp,
-                    top = statusBarPadding + 6.dp,
-                    bottom = 8.dp
-                ),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = stringResource(R.string.wardrobe),
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onPrimary
-            )
-
-            IconButton(onClick = onAddClick) {
-                Icon(
-                    modifier = Modifier.background(
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        shape = RoundedCornerShape(16.dp)
-                    ),
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = "Add Item",
-                    tint = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-        }
-    }
-}
 
 @Composable
 fun WardrobeScreenContent(showDialog: Boolean, onDialogDismiss: () -> Unit) {

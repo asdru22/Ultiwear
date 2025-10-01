@@ -62,15 +62,14 @@ import kotlinx.coroutines.withContext
 
 @Composable
 fun BrowseScreen() {
-
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-
-        BrowseTitleBar(statusBarPadding)
+        TopBar(
+            title = stringResource(R.string.browse),
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -84,33 +83,6 @@ fun BrowseScreen() {
     }
 }
 
-@Composable
-fun BrowseTitleBar(statusBarPadding: Dp) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.primary)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    start = 16.dp,
-                    end = 16.dp,
-                    top = statusBarPadding + 6.dp,
-                    bottom = 8.dp
-                ),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Start
-        ) {
-            Text(
-                text = stringResource(R.string.browse),
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onPrimary
-            )
-        }
-    }
-}
 
 
 @Composable
