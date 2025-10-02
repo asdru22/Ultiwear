@@ -29,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,13 +47,23 @@ import com.aln.ultiwear.R
 import com.aln.ultiwear.model.PostedWardrobeItem
 import com.aln.ultiwear.model.WardrobeItem
 import com.aln.ultiwear.viewModel.BrowseViewModel
+import com.aln.ultiwear.viewModel.WardrobeViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 
 @Composable
-fun BrowseScreen(viewModel: BrowseViewModel = viewModel()) {
-    val items by viewModel.items
-    val isLoading by viewModel.isLoading
+fun BrowseScreen(browseViewModel: BrowseViewModel = viewModel(),
+                 wardrobeViewModel: WardrobeViewModel
+) {
+    val items by browseViewModel.items
+    val isLoading by browseViewModel.isLoading
+    // convert the flow into a compose State object
+    val postsChanged by wardrobeViewModel.itemsChanged.collectAsState()
+
+    // launch a coroutine tied to the composable's lifecycle
+    LaunchedEffect(postsChanged) {
+        browseViewModel.fetchPosts()
+    }
 
     Column(
         modifier = Modifier
@@ -78,7 +89,7 @@ fun BrowseScreen(viewModel: BrowseViewModel = viewModel()) {
 
                 // isn't loading and there are items
                 else -> {
-                    BrowseScreenContent(items = items, viewModel = viewModel)
+                    BrowseScreenContent(items = items, viewModel = browseViewModel)
                 }
             }
         }

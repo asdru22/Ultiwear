@@ -135,13 +135,21 @@ fun AppWithBottomBar(
 
     var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
 
+    val wardrobeViewModel: WardrobeViewModel = viewModel()
+
     val tabs = listOf(
-        TabItem("Wardrobe", R.drawable.wardrobe) { WardrobeScreen() },
-        TabItem("Social", R.drawable.social) { BrowseScreen() },
+        TabItem("Wardrobe", R.drawable.wardrobe) { WardrobeScreen(wardrobeViewModel) },
+        TabItem(
+            "Social",
+            R.drawable.social
+        ) { BrowseScreen(wardrobeViewModel = wardrobeViewModel) },
         TabItem("Events", R.drawable.events) { EventScreen() },
         TabItem("Trade", R.drawable.trade) { TradeScreen() },
-        TabItem("Settings", R.drawable.profile) { SettingsScreen(
-            onSignOut = onSignOut) }
+        TabItem("Settings", R.drawable.profile) {
+            SettingsScreen(
+                onSignOut = onSignOut
+            )
+        }
     )
 
     Scaffold(

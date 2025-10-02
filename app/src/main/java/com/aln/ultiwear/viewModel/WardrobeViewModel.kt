@@ -14,8 +14,10 @@ import com.aln.ultiwear.model.WardrobeItem
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -37,6 +39,12 @@ class WardrobeViewModel : ViewModel() {
     private val _uploadSuccess = MutableStateFlow(false)
     val uploadSuccess: StateFlow<Boolean> = _uploadSuccess.asStateFlow()
 
+    private val _isUploading = MutableStateFlow(false)
+    val isUploading: StateFlow<Boolean> = _isUploading.asStateFlow()
+
+    private val _itemsChanged = MutableStateFlow(false)
+    val itemsChanged: StateFlow<Boolean> = _itemsChanged.asStateFlow()
+
     init {
         val currentUserId = Firebase.auth.currentUser?.uid
         if (currentUserId != null) {
@@ -54,9 +62,11 @@ class WardrobeViewModel : ViewModel() {
         _selectedItem.value = item
     }
 
-    private val _isUploading = MutableStateFlow(false)
-    val isUploading: StateFlow<Boolean> = _isUploading.asStateFlow()
-
+    private fun notifyItemsChanged() {
+        // this value is flipped every time the function is called,
+        // detected by the launchedEffect that causes the browse screen to refresh
+        _itemsChanged.value = !_itemsChanged.value
+    }
     fun uploadItem(
         frontUri: Uri,
         backUri: Uri? = null,
@@ -88,7 +98,7 @@ class WardrobeViewModel : ViewModel() {
                         Log.e(tag, "Failed to create post for ${item.id}", e)
                     }
                 }
-
+                notifyItemsChanged()
                 _uploadSuccess.value = true
             } catch (e: Exception) {
                 Log.e(tag, "Upload failed", e)
@@ -106,6 +116,7 @@ class WardrobeViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 deleteWardrobeItem(id)
+                notifyItemsChanged()
             } catch (e: Exception) {
                 Log.e(tag, "Failed to delete item", e)
             }

@@ -24,7 +24,7 @@ class BrowseViewModel(val handler: PostHandler = PostHandler()) : ViewModel() {
         fetchPosts()
     }
 
-    private fun fetchPosts(limit: Long = 20) {
+    fun fetchPosts(limit: Long = 20) {
         viewModelScope.launch {
             _isLoading.value = true
             try {

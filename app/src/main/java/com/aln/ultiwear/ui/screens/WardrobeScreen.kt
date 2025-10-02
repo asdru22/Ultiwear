@@ -30,7 +30,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.aln.ultiwear.R
 import com.aln.ultiwear.model.Condition
@@ -42,7 +41,7 @@ import com.aln.ultiwear.viewModel.WardrobeViewModel
 
 
 @Composable
-fun WardrobeScreen(viewModel: WardrobeViewModel = viewModel()) {
+fun WardrobeScreen(viewModel: WardrobeViewModel) {
     val showDialog by viewModel.showDialog.collectAsState()
     val wardrobeItems by viewModel.wardrobeItems.collectAsState()
     val selectedItem by viewModel.selectedItem.collectAsState()
