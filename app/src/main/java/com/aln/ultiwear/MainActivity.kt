@@ -7,6 +7,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,6 +25,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +36,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.aln.ultiwear.data.GoogleAuthClient
 import com.aln.ultiwear.model.TabItem
 import com.aln.ultiwear.ui.screens.BrowseScreen
@@ -43,22 +50,37 @@ import com.aln.ultiwear.ui.screens.SettingsScreen
 import com.aln.ultiwear.ui.screens.WardrobeScreen
 import com.aln.ultiwear.ui.theme.LocalBottomBarBackground
 import com.aln.ultiwear.ui.theme.UltiwearTheme
+import com.aln.ultiwear.viewModel.AuthViewModel
+import kotlin.getValue
 
 class MainActivity : ComponentActivity() {
+    private val googleAuthClient by lazy { GoogleAuthClient(this) }
+    // retrieve a ViewModel scoped to the Activity, ensures the viewModel
+    // is retained over configuration changes
+    // lazy creation guarantees that the viewModel is only created when it's
+    // first used, not when the activity is created
+    private val authViewModel: AuthViewModel by viewModels {
+        // since normally viewModels() can only call a no-argument constructor,
+        // but AuthViewModel needs a GoogleAuthClient parameter,
+        // we give it a factory that knows how to build it
+        viewModelFactory { // shorthand for ViewModelProvider.Factory
+            initializer {
+                AuthViewModel(googleAuthClient)
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val googleAuthClient = GoogleAuthClient(this)
 
         setContent {
-
             UltiwearTheme {
-                var isSignedIn by rememberSaveable {
-                    mutableStateOf(googleAuthClient.isSignedIn())
-                }
-                var hasInternet by rememberSaveable {
-                    mutableStateOf(isConnectedToInternet(this))
+                val isSignedIn by authViewModel.isSignedIn.collectAsState()
+                val hasInternet by authViewModel.hasInternet.collectAsState()
+
+                LaunchedEffect(Unit) {
+                    authViewModel.checkInternet(this@MainActivity)
                 }
 
                 Surface(
@@ -66,21 +88,21 @@ class MainActivity : ComponentActivity() {
                         .fillMaxSize()
                         .background(MaterialTheme.colorScheme.background),
                 ) {
+                    // main app states
                     when {
                         !hasInternet -> {
                             NoInternetScreen(
-                                onRetry = { hasInternet = isConnectedToInternet(this) }
+                                onRetry = { authViewModel.checkInternet(this@MainActivity) }
                             )
                         }
 
                         isSignedIn -> {
-                            AppWithBottomBar(onSignOut = { isSignedIn = false })
+                            AppWithBottomBar(onSignOut = { authViewModel.signOut() })
                         }
 
                         else -> {
                             LoginScreen(
-                                onSignIn = { googleAuthClient.signIn() },
-                                onSignedIn = { isSignedIn = true }
+                                onSignIn = { authViewModel.signIn() },
                             )
                         }
                     }
@@ -90,14 +112,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private fun isConnectedToInternet(context: Context): Boolean {
-    val connectivityManager =
-        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-    val network = connectivityManager.activeNetwork ?: return false
-    val capabilities = connectivityManager.getNetworkCapabilities(network)
-        ?: return false
-    return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-}
 
 @Composable
 fun NoInternetScreen(onRetry: () -> Unit) {
