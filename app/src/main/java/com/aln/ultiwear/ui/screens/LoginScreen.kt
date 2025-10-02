@@ -37,7 +37,7 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Ultiwear",
+                text = stringResource(R.string.app_name),
                 style = MaterialTheme.typography.headlineLarge,
             )
 

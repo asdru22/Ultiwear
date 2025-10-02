@@ -30,7 +30,7 @@ class GoogleAuthClient(
     private val firebaseAuth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
 
-    fun isSingedIn(): Boolean {
+    fun isSignedIn(): Boolean {
         if (firebaseAuth.currentUser != null) {
             Log.w(tag, "already signed in")
             return true
@@ -39,7 +39,7 @@ class GoogleAuthClient(
     }
 
     suspend fun signIn(): Boolean {
-        if (isSingedIn()) {
+        if (isSignedIn()) {
             return true
         }
         try {

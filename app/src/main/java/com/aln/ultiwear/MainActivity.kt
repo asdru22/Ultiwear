@@ -55,7 +55,7 @@ class MainActivity : ComponentActivity() {
 
             UltiwearTheme {
                 var isSignedIn by rememberSaveable {
-                    mutableStateOf(googleAuthClient.isSingedIn())
+                    mutableStateOf(googleAuthClient.isSignedIn())
                 }
                 var hasInternet by rememberSaveable {
                     mutableStateOf(isConnectedToInternet(this))
