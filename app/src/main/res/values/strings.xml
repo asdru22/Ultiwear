@@ -29,4 +29,5 @@
     <string name="wadrobe_dialog_title">Wadrobe Item</string>
     <string name="browse">Browse</string>
     <string name="event">Events Selector</string>
+    <string name="profile">Profile</string>
 </resources>

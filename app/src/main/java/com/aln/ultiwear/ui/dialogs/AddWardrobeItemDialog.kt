@@ -22,10 +22,10 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -34,18 +34,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aln.ultiwear.R
-import com.aln.ultiwear.data.makePost
-import com.aln.ultiwear.data.uploadWardrobeItem
 import com.aln.ultiwear.model.Condition
 import com.aln.ultiwear.model.Size
-import com.aln.ultiwear.model.WardrobeItem
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.yield
 
 @Composable
 fun AddWardrobeItemDialog(
     onDismiss: () -> Unit,
-    onUpload: (Uri, Uri?, Condition, Size, Boolean, Boolean) -> Unit
+    onUpload: (Uri, Uri?, Condition, Size, Boolean, Boolean) -> Unit,
+    isUploading: Boolean,
+    uploadSuccess: Boolean,
+    onResetUploadState: () -> Unit
+
 ) {
     var frontImageUri by remember { mutableStateOf<Uri?>(null) }
     var backImageUri by remember { mutableStateOf<Uri?>(null) }
@@ -53,6 +52,13 @@ fun AddWardrobeItemDialog(
     var selectedSize by remember { mutableStateOf<Size?>(null) }
     var post by remember { mutableStateOf(false) }
     var tradeable by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uploadSuccess) {
+        if (uploadSuccess) {
+            onDismiss()
+            onResetUploadState() // reset flag after closing
+        }
+    }
 
     val context = LocalContext.current
 
@@ -84,20 +90,29 @@ fun AddWardrobeItemDialog(
                             post,
                             tradeable
                         )
-                        onDismiss()
                     }
                 },
+                enabled = !isUploading, // disabled during upload
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.tertiary,
                     contentColor = MaterialTheme.colorScheme.onTertiary
                 )
             ) {
-                Text(stringResource(R.string.upload))
+                if (isUploading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onTertiary
+                    )
+                } else {
+                    Text(stringResource(R.string.upload))
+                }
             }
         },
         dismissButton = {
             Button(
                 onClick = onDismiss,
+                enabled = !isUploading, // prevent closing during upload
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.tertiary,
                     contentColor = MaterialTheme.colorScheme.onTertiary

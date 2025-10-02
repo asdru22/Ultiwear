@@ -6,16 +6,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aln.ultiwear.data.deleteWardrobeItem
 import com.aln.ultiwear.data.listenToWardrobeItems
+import com.aln.ultiwear.data.makePost
 import com.aln.ultiwear.data.uploadWardrobeItem
 import com.aln.ultiwear.model.Condition
 import com.aln.ultiwear.model.Size
 import com.aln.ultiwear.model.WardrobeItem
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class WardrobeViewModel : ViewModel() {
 
@@ -30,6 +33,9 @@ class WardrobeViewModel : ViewModel() {
 
     private val _showDialog = MutableStateFlow(false)
     val showDialog: StateFlow<Boolean> = _showDialog.asStateFlow()
+
+    private val _uploadSuccess = MutableStateFlow(false)
+    val uploadSuccess: StateFlow<Boolean> = _uploadSuccess.asStateFlow()
 
     init {
         val currentUserId = Firebase.auth.currentUser?.uid
@@ -48,6 +54,9 @@ class WardrobeViewModel : ViewModel() {
         _selectedItem.value = item
     }
 
+    private val _isUploading = MutableStateFlow(false)
+    val isUploading: StateFlow<Boolean> = _isUploading.asStateFlow()
+
     fun uploadItem(
         frontUri: Uri,
         backUri: Uri? = null,
@@ -57,11 +66,40 @@ class WardrobeViewModel : ViewModel() {
         tradeable: Boolean
     ) {
         viewModelScope.launch {
-            val item = uploadWardrobeItem(frontUri, backUri, condition, size, post, tradeable)
-            if (item != null) {
-                Log.d(tag, "Item uploaded successfully: ${item.id}")
+            _isUploading.value = true
+            _uploadSuccess.value = false
+            try {
+                val item = withContext(Dispatchers.IO) {
+                    uploadWardrobeItem(frontUri, backUri, condition, size, post, tradeable)
+                }
+
+                if (item == null) {
+                    Log.e(tag, "Item upload failed")
+                    return@launch
+                }
+
+                Log.d(tag, "Item uploaded: ${item.id}")
+
+                if (post) {
+                    try {
+                        withContext(Dispatchers.IO) { makePost(item) }
+                        Log.d(tag, "Post created for item ${item.id}")
+                    } catch (e: Exception) {
+                        Log.e(tag, "Failed to create post for ${item.id}", e)
+                    }
+                }
+
+                _uploadSuccess.value = true
+            } catch (e: Exception) {
+                Log.e(tag, "Upload failed", e)
+            } finally {
+                _isUploading.value = false
             }
         }
+    }
+
+    fun resetUploadState() {
+        _uploadSuccess.value = false
     }
 
     fun deleteItem(id: String) {

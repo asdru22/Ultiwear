@@ -1,6 +1,7 @@
 package com.aln.ultiwear.data
 
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
@@ -8,6 +9,7 @@ import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetCredentialResponse
 import com.aln.ultiwear.BuildConfig
+import com.aln.ultiwear.MainActivity
 import com.aln.ultiwear.model.User
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -77,10 +79,12 @@ class GoogleAuthClient(
 
     private fun getAuthCredential(credential: CustomCredential): AuthCredential? {
         return try {
-            val tokenCredential = GoogleIdTokenCredential.createFrom(credential.data)
+            val tokenCredential = GoogleIdTokenCredential.createFrom(
+                credential.data
+            )
             GoogleAuthProvider.getCredential(tokenCredential.idToken, null)
         } catch (e: Exception) {
-            Log.e(tag, "Failed to parse GoogleIdToken",e)
+            Log.e(tag, "Failed to parse GoogleIdToken", e)
             null
         }
     }
@@ -99,7 +103,7 @@ class GoogleAuthClient(
         if (userRef.isEmpty) {
             registerNewUser(user)
         } else {
-            Log.w(tag,"User already exists in Firestore")
+            Log.w(tag, "User already exists in Firestore")
         }
     }
 
@@ -135,5 +139,10 @@ class GoogleAuthClient(
             ClearCredentialStateRequest()
         )
         firebaseAuth.signOut()
+
+        // restart mainActivity to reload viewModels
+        val intent = Intent(context, MainActivity::class.java)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        context.startActivity(intent)
     }
 }

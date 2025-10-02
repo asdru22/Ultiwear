@@ -46,6 +46,8 @@ fun WardrobeScreen(viewModel: WardrobeViewModel = viewModel()) {
     val showDialog by viewModel.showDialog.collectAsState()
     val wardrobeItems by viewModel.wardrobeItems.collectAsState()
     val selectedItem by viewModel.selectedItem.collectAsState()
+    val isUploading by viewModel.isUploading.collectAsState()
+    val uploadSuccess by viewModel.uploadSuccess.collectAsState()
 
     Column(
         modifier = Modifier
@@ -80,7 +82,10 @@ fun WardrobeScreen(viewModel: WardrobeViewModel = viewModel()) {
                 onItemSelected = { viewModel.selectItem(it) },
                 onItemDetailsDismiss = { viewModel.selectItem(null) },
                 onUpload = viewModel::uploadItem,
-                onDelete = viewModel::deleteItem
+                onDelete = viewModel::deleteItem,
+                isUploading = isUploading,
+                uploadSuccess = uploadSuccess,
+                onResetUploadState = { viewModel.resetUploadState() }
             )
         }
     }
@@ -95,14 +100,20 @@ fun WardrobeScreenContent(
     onItemSelected: (WardrobeItem) -> Unit,
     onItemDetailsDismiss: () -> Unit,
     onUpload: (Uri, Uri?, Condition, Size, Boolean, Boolean) -> Unit,
-    onDelete: (String) -> Unit
+    onDelete: (String) -> Unit,
+    isUploading: Boolean,
+    uploadSuccess: Boolean,
+    onResetUploadState: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
 
         if (showDialog) {
             AddWardrobeItemDialog(
                 onDismiss = onDialogDismiss,
-                onUpload = onUpload
+                onUpload = onUpload,
+                isUploading = isUploading,
+                uploadSuccess = uploadSuccess,
+                onResetUploadState = onResetUploadState
             )
         }
 
