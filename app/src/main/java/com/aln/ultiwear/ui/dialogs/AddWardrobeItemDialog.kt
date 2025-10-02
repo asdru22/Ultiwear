@@ -45,7 +45,7 @@ import kotlinx.coroutines.yield
 @Composable
 fun AddWardrobeItemDialog(
     onDismiss: () -> Unit,
-    onUpload: (WardrobeItem) -> Unit
+    onUpload: (Uri, Uri?, Condition, Size, Boolean, Boolean) -> Unit
 ) {
     var frontImageUri by remember { mutableStateOf<Uri?>(null) }
     var backImageUri by remember { mutableStateOf<Uri?>(null) }
@@ -53,26 +53,19 @@ fun AddWardrobeItemDialog(
     var selectedSize by remember { mutableStateOf<Size?>(null) }
     var post by remember { mutableStateOf(false) }
     var tradeable by remember { mutableStateOf(false) }
-    var isUploading by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
 
-    // create a CoroutineScope tied to the composable's lifecycle
-    val coroutineScope = rememberCoroutineScope()
     // Launchers for camera
     var cameraUri by remember { mutableStateOf<Uri?>(null) }
     val cameraLauncher =
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.TakePicture()
-        ) { success ->
+        rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
             if (success) frontImageUri = cameraUri
         }
 
     var backCameraUri by remember { mutableStateOf<Uri?>(null) }
     val backCameraLauncher =
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.TakePicture()
-        ) { success ->
+        rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
             if (success) backImageUri = backCameraUri
         }
 
@@ -82,53 +75,24 @@ fun AddWardrobeItemDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    if (!isUploading && frontImageUri != null
-                        && selectedCondition != null
-                        && selectedSize != null
-                    ) {
-                        isUploading = true
-
-                        coroutineScope.launch {
-                            // momentarily suspend the coroutine to run others
-                            // allowing recompositions triggered by isUplodaing==true
-                            yield()
-
-                            val uploadedItem = uploadWardrobeItem(
-                                frontUri = frontImageUri!!,
-                                backUri = backImageUri,
-                                condition = selectedCondition!!,
-                                size = selectedSize!!,
-                                post = post,
-                                tradeable = tradeable
-                            )
-
-                            uploadedItem?.let {
-                                onUpload(it)
-                                if (post) {
-                                    launch { makePost(it) } // make the post concurrently
-                                }
-                            }
-
-                            isUploading = false
-                            onDismiss()
-                        }
+                    if (frontImageUri != null && selectedCondition != null && selectedSize != null) {
+                        onUpload(
+                            frontImageUri!!,
+                            backImageUri,
+                            selectedCondition!!,
+                            selectedSize!!,
+                            post,
+                            tradeable
+                        )
+                        onDismiss()
                     }
                 },
-                enabled = !isUploading,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.tertiary,
                     contentColor = MaterialTheme.colorScheme.onTertiary
                 )
             ) {
-                if (isUploading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onTertiary
-                    )
-                } else {
-                    Text(stringResource(R.string.upload))
-                }
+                Text(stringResource(R.string.upload))
             }
         },
         dismissButton = {

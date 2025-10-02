@@ -1,5 +1,6 @@
 package com.aln.ultiwear.ui.screens
 
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,28 +24,28 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.aln.ultiwear.R
-import com.aln.ultiwear.data.listenToWardrobeItems
+import com.aln.ultiwear.model.Condition
+import com.aln.ultiwear.model.Size
 import com.aln.ultiwear.model.WardrobeItem
 import com.aln.ultiwear.ui.dialogs.AddWardrobeItemDialog
 import com.aln.ultiwear.ui.dialogs.WardrobeItemDetailsDialog
-import com.google.firebase.Firebase
-import com.google.firebase.auth.auth
+import com.aln.ultiwear.viewModel.WardrobeViewModel
 
 
 @Composable
-fun WardrobeScreen() {
-    var showDialog by remember { mutableStateOf(false) }
+fun WardrobeScreen(viewModel: WardrobeViewModel = viewModel()) {
+    val showDialog by viewModel.showDialog.collectAsState()
+    val wardrobeItems by viewModel.wardrobeItems.collectAsState()
+    val selectedItem by viewModel.selectedItem.collectAsState()
 
     Column(
         modifier = Modifier
@@ -54,7 +55,7 @@ fun WardrobeScreen() {
         TopBar(
             title = stringResource(R.string.wardrobe),
             content = {
-                IconButton(onClick = { showDialog = true }) {
+                IconButton(onClick = { viewModel.setShowDialog(true) }) {
                     Icon(
                         imageVector = Icons.Filled.Add,
                         contentDescription = "Add Item",
@@ -71,35 +72,37 @@ fun WardrobeScreen() {
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
         ) {
-            WardrobeScreenContent(showDialog, onDialogDismiss = { showDialog = false })
+            WardrobeScreenContent(
+                wardrobeItems = wardrobeItems,
+                showDialog = showDialog,
+                selectedItem = selectedItem,
+                onDialogDismiss = { viewModel.setShowDialog(false) },
+                onItemSelected = { viewModel.selectItem(it) },
+                onItemDetailsDismiss = { viewModel.selectItem(null) },
+                onUpload = viewModel::uploadItem,
+                onDelete = viewModel::deleteItem
+            )
         }
     }
 }
 
-
 @Composable
-fun WardrobeScreenContent(showDialog: Boolean, onDialogDismiss: () -> Unit) {
-    val currentUserId = Firebase.auth.currentUser?.uid ?: return
-    var wardrobeItems by remember {
-        mutableStateOf<List<WardrobeItem>>(emptyList())
-    }
-    var selectedItem by remember { mutableStateOf<WardrobeItem?>(null) }
-
-    // Load items from Firestore
-    LaunchedEffect(currentUserId) {
-        listenToWardrobeItems(currentUserId) { items ->
-            wardrobeItems = items
-        }
-    }
-
+fun WardrobeScreenContent(
+    wardrobeItems: List<WardrobeItem>,
+    showDialog: Boolean,
+    selectedItem: WardrobeItem?,
+    onDialogDismiss: () -> Unit,
+    onItemSelected: (WardrobeItem) -> Unit,
+    onItemDetailsDismiss: () -> Unit,
+    onUpload: (Uri, Uri?, Condition, Size, Boolean, Boolean) -> Unit,
+    onDelete: (String) -> Unit
+) {
     Column(modifier = Modifier.fillMaxSize()) {
 
         if (showDialog) {
             AddWardrobeItemDialog(
                 onDismiss = onDialogDismiss,
-                onUpload = {
-                    // getting items is handled by the listener
-                }
+                onUpload = onUpload
             )
         }
 
@@ -113,17 +116,17 @@ fun WardrobeScreenContent(showDialog: Boolean, onDialogDismiss: () -> Unit) {
             modifier = Modifier.fillMaxSize()
         ) {
             items(wardrobeItems) { item ->
-                FrontImageCard(item) {
-                    selectedItem = item
-                }
+                FrontImageCard(item) { onItemSelected(item) }
             }
         }
     }
 
     if (selectedItem != null) {
-        WardrobeItemDetailsDialog(item = selectedItem!!) {
-            selectedItem = null
-        }
+        WardrobeItemDetailsDialog(
+            item = selectedItem,
+            onDismiss = onItemDetailsDismiss,
+            onDelete = onDelete
+        )
     }
 }
 
