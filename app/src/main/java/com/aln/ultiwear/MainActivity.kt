@@ -43,7 +43,6 @@ import com.aln.ultiwear.ui.screens.SettingsScreen
 import com.aln.ultiwear.ui.screens.WardrobeScreen
 import com.aln.ultiwear.ui.theme.LocalBottomBarBackground
 import com.aln.ultiwear.ui.theme.UltiwearTheme
-import com.aln.ultiwear.viewModel.EventViewModel
 
 class MainActivity : ComponentActivity() {
 
@@ -53,7 +52,6 @@ class MainActivity : ComponentActivity() {
         val googleAuthClient = GoogleAuthClient(this)
 
         setContent {
-            val vm = EventViewModel()
 
             UltiwearTheme {
                 var isSignedIn by rememberSaveable {
@@ -76,7 +74,7 @@ class MainActivity : ComponentActivity() {
                         }
 
                         isSignedIn -> {
-                            AppWithBottomBar(onSignOut = { isSignedIn = false }, viewModel = vm)
+                            AppWithBottomBar(onSignOut = { isSignedIn = false })
                         }
 
                         else -> {
@@ -96,7 +94,8 @@ private fun isConnectedToInternet(context: Context): Boolean {
     val connectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     val network = connectivityManager.activeNetwork ?: return false
-    val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+    val capabilities = connectivityManager.getNetworkCapabilities(network)
+        ?: return false
     return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
 }
 
@@ -120,15 +119,17 @@ fun NoInternetScreen(onRetry: () -> Unit) {
 
 @Composable
 fun AppWithBottomBar(
-    viewModel: EventViewModel,
+
     onSignOut: () -> Unit
 ) {
+
     var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
 
     val tabs = listOf(
         TabItem("Wardrobe", R.drawable.wardrobe) { WardrobeScreen() },
         TabItem("Social", R.drawable.social) { BrowseScreen() },
-        TabItem("Trade", R.drawable.trade) { EventScreen(viewModel) },
+        TabItem("Events", R.drawable.events) { EventScreen() },
+        TabItem("Trade", R.drawable.trade) { TradeScreen() },
         TabItem("Settings", R.drawable.settings) { SettingsScreen(onSignOut) }
     )
 
@@ -157,4 +158,9 @@ fun AppWithBottomBar(
             tabs[selectedIndex].content()
         }
     }
+}
+
+@Composable
+fun TradeScreen() {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Trade") }
 }

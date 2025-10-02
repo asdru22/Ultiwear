@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aln.ultiwear.R
 import com.aln.ultiwear.model.tournament.TournamentUi
 import com.aln.ultiwear.viewModel.EventViewModel
@@ -40,18 +41,17 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
-fun EventScreen(viewModel: EventViewModel, modifier: Modifier = Modifier) {
+fun EventScreen(modifier: Modifier = Modifier, viewModel: EventViewModel = viewModel()) {
     var searchActive by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
 
     val tournaments = viewModel.events
-    val displayFormatter = DateTimeFormatter.ofPattern("MMM dd yyyy", Locale.ENGLISH)
+    val displayFormatter = DateTimeFormatter.ofPattern(
+        "MMM dd yyyy", Locale.ENGLISH
+    )
 
-    val filteredTournaments = if (searchQuery.isBlank()) {
-        tournaments
-    } else {
-        tournaments.filter { it.name.contains(searchQuery, ignoreCase = true) }
-    }
+    val filteredTournaments = if (searchQuery.isBlank()) tournaments
+    else tournaments.filter { it.name.contains(searchQuery, ignoreCase = true) }
 
     Column(modifier.fillMaxSize()) {
         TopBar(
@@ -90,17 +90,8 @@ fun EventScreen(viewModel: EventViewModel, modifier: Modifier = Modifier) {
                         )
                     }
                 }
-
-                IconButton(onClick = { }) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Close",
-                        tint = MaterialTheme.colorScheme.onBackground
-                    )
-                }
             }
         )
-
 
         LazyColumn(
             modifier = Modifier
@@ -109,7 +100,11 @@ fun EventScreen(viewModel: EventViewModel, modifier: Modifier = Modifier) {
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(filteredTournaments) { tournament ->
-                TournamentCard(tournament = tournament, displayFormatter = displayFormatter)
+                TournamentCard(
+                    tournament = tournament,
+                    displayFormatter = displayFormatter,
+                    viewModel = viewModel
+                )
             }
         }
     }
@@ -120,9 +115,10 @@ fun EventScreen(viewModel: EventViewModel, modifier: Modifier = Modifier) {
 fun TournamentCard(
     tournament: TournamentUi,
     displayFormatter: DateTimeFormatter,
+    viewModel: EventViewModel,
     modifier: Modifier = Modifier
 ) {
-    var attending by remember { mutableStateOf(false) }
+    val attending = viewModel.attendances[tournament.id] ?: false
 
     Card(modifier = modifier.fillMaxWidth()) {
         Row(
@@ -132,7 +128,6 @@ fun TournamentCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                // name
                 Text(tournament.name, style = MaterialTheme.typography.titleMedium)
 
                 // dates
@@ -140,11 +135,17 @@ fun TournamentCard(
                     Icon(
                         imageVector = Icons.Default.DateRange,
                         contentDescription = "Dates",
-                        modifier = Modifier.size(18.dp).padding(end = 4.dp),
+                        modifier = Modifier
+                            .size(18.dp)
+                            .padding(end = 4.dp),
                         tint = MaterialTheme.colorScheme.onBackground
                     )
-                    val start = tournament.startDate?.let { ZonedDateTime.parse(it) }
-                    val end = tournament.endDate?.let { ZonedDateTime.parse(it) }
+                    val start = tournament.startDate?.let {
+                        ZonedDateTime.parse(it)
+                    }
+                    val end = tournament.endDate?.let {
+                        ZonedDateTime.parse(it)
+                    }
                     if (start != null && end != null) {
                         Text("${start.format(displayFormatter)} - ${end.format(displayFormatter)}")
                     } else {
@@ -157,17 +158,18 @@ fun TournamentCard(
                     Icon(
                         imageVector = Icons.Default.Place,
                         contentDescription = "Location",
-                        modifier = Modifier.size(18.dp).padding(end = 4.dp),
+                        modifier = Modifier
+                            .size(18.dp)
+                            .padding(end = 4.dp),
                         tint = MaterialTheme.colorScheme.onBackground
                     )
                     Text(tournament.country ?: "Unknown")
                 }
             }
 
-            // attending
             Checkbox(
                 checked = attending,
-                onCheckedChange = { attending = it }
+                onCheckedChange = { viewModel.setAttendance(tournament.id, it) }
             )
         }
     }

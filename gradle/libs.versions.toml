@@ -18,6 +18,7 @@ firebaseBom = "34.3.0"
 gmsGoogleServices = "4.4.3"
 firebaseStorage = "22.0.1"
 firebaseFirestore = "26.0.1"
+lifecycleViewmodelCompose = "2.9.4"
 materialIconsCore = "1.7.8"
 retrofit = "3.0.0"
 
@@ -25,6 +26,7 @@ retrofit = "3.0.0"
 
 androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentialsPlayServicesAuth" }
 androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentialsPlayServicesAuth" }
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "converterGson" }
 googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
