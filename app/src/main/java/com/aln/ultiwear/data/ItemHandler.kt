@@ -6,6 +6,7 @@ import android.graphics.Matrix
 import android.net.Uri
 import android.util.Log
 import com.aln.ultiwear.model.Condition
+import com.aln.ultiwear.model.Post
 import com.aln.ultiwear.model.Size
 import com.aln.ultiwear.model.WardrobeItem
 import com.google.firebase.Firebase
@@ -178,4 +179,21 @@ suspend fun deleteWardrobeItem(id: String) {
         Log.e(tag, "Failed to delete item, images, or post", e)
         throw e
     }
+}
+
+suspend fun makePost(item: WardrobeItem?) = try {
+    val firestore: FirebaseFirestore = Firebase.firestore
+
+    val postId = firestore.collection("posts").document().id
+    val newPost = Post(
+        wardrobeUid = item?.id ?: "none",
+        likes = 0
+    )
+
+    firestore.collection("posts").document(postId)
+        .set(newPost)
+        .await()
+    Log.d(tag, "Post created")
+} catch (e: Exception) {
+    Log.e(tag, "Failed to create post", e)
 }

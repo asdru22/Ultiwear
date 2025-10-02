@@ -1,6 +1,5 @@
 package com.aln.ultiwear.ui.screens
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -25,16 +23,15 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,30 +40,26 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.aln.ultiwear.R
-import com.aln.ultiwear.data.fetchPosts
-import com.aln.ultiwear.data.hasUserLiked
-import com.aln.ultiwear.data.toggleLike
 import com.aln.ultiwear.model.PostedWardrobeItem
 import com.aln.ultiwear.model.WardrobeItem
+import com.aln.ultiwear.viewModel.BrowseViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 @Composable
-fun BrowseScreen() {
+fun BrowseScreen(viewModel: BrowseViewModel = viewModel()) {
+    val items by viewModel.items
+    val isLoading by viewModel.isLoading
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        TopBar(
-            title = stringResource(R.string.browse),
-        )
-
+        TopBar(title = stringResource(R.string.browse))
         Spacer(modifier = Modifier.height(16.dp))
 
         Box(
@@ -74,86 +67,70 @@ fun BrowseScreen() {
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
         ) {
-            BrowseScreenContent()
+            when {
+                isLoading -> {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
+
+                items.isEmpty() -> {
+                    Text("No posts found", modifier = Modifier.align(Alignment.Center))
+                }
+
+                // isn't loading and there are items
+                else -> {
+                    BrowseScreenContent(items = items, viewModel = viewModel)
+                }
+            }
         }
     }
 }
 
 
-
 @Composable
-fun BrowseScreenContent() {
-    val coroutineScope = rememberCoroutineScope()
-
-    var items by remember {
-        mutableStateOf<List<PostedWardrobeItem>>(emptyList())
-    }
-    LaunchedEffect(Unit) { items = fetchPosts() }
-
+fun BrowseScreenContent(
+    items: List<PostedWardrobeItem>,
+    viewModel: BrowseViewModel
+) {
     val listState = rememberLazyListState()
     val flingBehavior = rememberSnapFlingBehavior(lazyListState = listState)
+    val currentUser = Firebase.auth.currentUser
 
     LazyColumn(
         state = listState,
         flingBehavior = flingBehavior,
-        verticalArrangement = Arrangement.Top,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier.fillMaxSize()
     ) {
         items(items) { combined ->
-            val currentUser = Firebase.auth.currentUser
-            var likes by remember(combined.post?.wardrobeUid) {
-                mutableIntStateOf(combined.post?.likes ?: 0)
-            }
+            var userLiked by remember { mutableStateOf(false) }
 
-            // check if the current user liked this post
-            var userLiked by remember {
-                mutableStateOf(false)
-            }
-            LaunchedEffect(Unit) {
+            LaunchedEffect(combined.wardrobeUid) {
                 if (currentUser != null && combined.post != null) {
-                    userLiked = hasUserLiked(
-                        combined.wardrobeUid,
-                        currentUser.uid
-                    )
+                    userLiked =
+                        viewModel.handler.hasUserLiked(
+                            wardrobeUid =  combined.wardrobeUid,
+                            userId = currentUser.uid
+                        )
                 }
             }
-            // check if current user is the post owner
+
             val isOwner = currentUser?.uid == combined.wardrobeItem.owner
 
-            Box(
-                Modifier
-                    .fillParentMaxHeight()
-                    .wrapContentHeight()
-            ) {
-                WardrobeItemCard(
-                    item = combined.wardrobeItem,
-                    likes = likes,
-                    userLiked = userLiked,
-                    isOwner = isOwner,
-                    onLikeClicked = {
-                        if (currentUser != null && combined.post != null) {
-                            coroutineScope.launch {
-                                try {
-                                    val newCount = withContext(Dispatchers.IO) {
-                                        toggleLike(
-                                            combined.wardrobeUid,
-                                            currentUser.uid
-                                        )
-                                    }
-                                    likes = newCount
-                                    userLiked = !userLiked
-                                } catch (e: Exception) {
-                                    Log.e("Browse", "Error toggling like", e)
-                                }
-                            }
-                        }
-                    },
-                    onTradeClicked = {}
-                )
-            }
+            WardrobeItemCard(
+                item = combined.wardrobeItem,
+                likes = combined.post?.likes ?: 0,
+                userLiked = userLiked,
+                isOwner = isOwner,
+                onLikeClicked = {
+                    viewModel.toggleLike(combined)
+                    userLiked = !userLiked
+                },
+                onTradeClicked = {}
+            )
         }
     }
 }
+
 
 @Composable
 fun WardrobeItemCard(
