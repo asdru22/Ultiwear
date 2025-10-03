@@ -6,20 +6,29 @@ import android.net.Uri
 import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -27,16 +36,22 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.aln.ultiwear.R
 import com.aln.ultiwear.model.Condition
 import com.aln.ultiwear.model.Size
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddWardrobeItemDialog(
     onDismiss: () -> Unit,
@@ -44,8 +59,9 @@ fun AddWardrobeItemDialog(
     isUploading: Boolean,
     uploadSuccess: Boolean,
     onResetUploadState: () -> Unit
-
 ) {
+    val context = LocalContext.current
+
     var frontImageUri by remember { mutableStateOf<Uri?>(null) }
     var backImageUri by remember { mutableStateOf<Uri?>(null) }
     var selectedCondition by remember { mutableStateOf<Condition?>(null) }
@@ -53,20 +69,10 @@ fun AddWardrobeItemDialog(
     var post by remember { mutableStateOf(false) }
     var tradeable by remember { mutableStateOf(false) }
 
-    LaunchedEffect(uploadSuccess) {
-        if (uploadSuccess) {
-            onDismiss()
-            onResetUploadState() // reset flag after closing
-        }
-    }
-
-    val context = LocalContext.current
-
-    // Launchers for camera
-    var cameraUri by remember { mutableStateOf<Uri?>(null) }
-    val cameraLauncher =
+    var frontCameraUri by remember { mutableStateOf<Uri?>(null) }
+    val frontCameraLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
-            if (success) frontImageUri = cameraUri
+            if (success) frontImageUri = frontCameraUri
         }
 
     var backCameraUri by remember { mutableStateOf<Uri?>(null) }
@@ -75,34 +81,38 @@ fun AddWardrobeItemDialog(
             if (success) backImageUri = backCameraUri
         }
 
+    // reset after successful upload
+    LaunchedEffect(uploadSuccess) {
+        if (uploadSuccess) {
+            onDismiss()
+            onResetUploadState()
+        }
+    }
+
     AlertDialog(
         modifier = Modifier.fillMaxWidth(),
         onDismissRequest = onDismiss,
         confirmButton = {
             Button(
                 onClick = {
-                    if (frontImageUri != null && selectedCondition != null && selectedSize != null) {
-                        onUpload(
-                            frontImageUri!!,
-                            backImageUri,
-                            selectedCondition!!,
-                            selectedSize!!,
-                            post,
-                            tradeable
-                        )
-                    }
+                    onUpload(
+                        frontImageUri!!,
+                        backImageUri,
+                        selectedCondition!!,
+                        selectedSize!!,
+                        post,
+                        tradeable
+                    )
                 },
-                enabled = !isUploading, // disabled during upload
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.tertiary,
-                    contentColor = MaterialTheme.colorScheme.onTertiary
-                )
+                enabled = frontImageUri != null &&
+                        selectedCondition != null &&
+                        selectedSize != null &&
+                        !isUploading
             ) {
                 if (isUploading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onTertiary
+                        strokeWidth = 2.dp
                     )
                 } else {
                     Text(stringResource(R.string.upload))
@@ -110,176 +120,169 @@ fun AddWardrobeItemDialog(
             }
         },
         dismissButton = {
-            Button(
-                onClick = onDismiss,
-                enabled = !isUploading, // prevent closing during upload
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.tertiary,
-                    contentColor = MaterialTheme.colorScheme.onTertiary
-                )
-            ) { Text(stringResource(R.string.cancel)) }
+            OutlinedButton(onClick = onDismiss, enabled = !isUploading) {
+                Text(stringResource(R.string.cancel))
+            }
         },
         title = {
             Text(
                 text = stringResource(R.string.wardrobe_add_item),
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
         },
         text = {
-            UserInputs(
-                frontImageUri = frontImageUri,
-                backImageUri = backImageUri,
-                selectedCondition = selectedCondition,
-                selectedSize = selectedSize,
-                onFrontImageClick = {
-                    cameraUri = createImageUri(context)
-                    cameraLauncher.launch(cameraUri!!)
-                },
-                onBackImageClick = {
-                    backCameraUri = createImageUri(context)
-                    backCameraLauncher.launch(backCameraUri!!)
-                },
-                post = post,
-                onPostChanged = { post = it },
-                tradeable = tradeable,
-                onTradeableChanged = { tradeable = it },
-                onConditionSelected = { selectedCondition = it },
-                onSizeSelected = { selectedSize = it }
-            )
-        }
-    )
-}
-
-
-// The content parameter is a lambda that takes a RowScope composable
-@Composable
-fun InputRow(content: @Composable RowScope.() -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        content = content
-    )
-}
-
-val textSize = 13.sp
-
-
-@Composable
-fun UserInputs(
-    frontImageUri: Uri?,
-    backImageUri: Uri?,
-    selectedCondition: Condition?,
-    selectedSize: Size?,
-    onFrontImageClick: () -> Unit,
-    onBackImageClick: () -> Unit,
-    onConditionSelected: (Condition) -> Unit,
-    onSizeSelected: (Size) -> Unit,
-    post: Boolean,
-    onPostChanged: (Boolean) -> Unit,
-    tradeable: Boolean,
-    onTradeableChanged: (Boolean) -> Unit
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        // front and optional back picture
-        InputRow {
-            Button(onClick = onFrontImageClick) {
-                Text(
-                    fontSize = textSize,
-                    text = if (frontImageUri == null) stringResource(R.string.wardrobe_front_picture)
-                    else stringResource(R.string.wardrobe_front_picture_selected)
-                )
-            }
-
-            Button(onClick = onBackImageClick) {
-                Text(
-                    fontSize = textSize,
-                    text = if (backImageUri == null) stringResource(R.string.wardrobe_back_picture)
-                    else stringResource(R.string.wardrobe_back_picture_selected)
-                )
-            }
-        }
-
-        InputRow {
-            // condition dropdown
-            var conditionExpanded by remember { mutableStateOf(false) }
-            Box {
-                Button(onClick = { conditionExpanded = true }) {
-                    Text(
-                        fontSize = textSize,
-                        // run a lambda with select condition as the parameter
-                        text = selectedCondition?.let { stringResource(it.resId) }
-                            ?: stringResource(R.string.wardrobe_select_condition)
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                // photos
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    ImageUploadBox(
+                        uri = frontImageUri,
+                        placeholderText = stringResource(R.string.wardrobe_front_picture),
+                        onClick = {
+                            frontCameraUri = createImageUri(context)
+                            frontCameraLauncher.launch(frontCameraUri!!)
+                        }
+                    )
+                    ImageUploadBox(
+                        uri = backImageUri,
+                        placeholderText = stringResource(R.string.wardrobe_back_picture),
+                        onClick = {
+                            backCameraUri = createImageUri(context)
+                            backCameraLauncher.launch(backCameraUri!!)
+                        }
                     )
                 }
-                DropdownMenu(
+
+                // condition
+                var conditionExpanded by remember { mutableStateOf(false) }
+                ExposedDropdownMenuBox(
                     expanded = conditionExpanded,
-                    onDismissRequest = { conditionExpanded = false }
+                    onExpandedChange = { conditionExpanded = it }
                 ) {
-                    Condition.entries.forEach { condition ->
-                        DropdownMenuItem(
-                            text = { Text(stringResource(condition.resId)) },
-                            onClick = {
-                                onConditionSelected(condition)
-                                conditionExpanded = false
-                            }
-                        )
+                    OutlinedTextField(
+                        value = selectedCondition?.let { stringResource(it.resId) } ?: "",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = {
+                            Text(stringResource(R.string.wardrobe_select_condition))
+                        },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = conditionExpanded)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
+                    )
+                    ExposedDropdownMenu(
+                        expanded = conditionExpanded,
+                        onDismissRequest = { conditionExpanded = false }
+                    ) {
+                        Condition.entries.forEach { condition ->
+                            DropdownMenuItem(
+                                text = { Text(stringResource(condition.resId)) },
+                                onClick = {
+                                    selectedCondition = condition
+                                    conditionExpanded = false
+                                }
+                            )
+                        }
                     }
                 }
-            }
 
-            // size dropdown
-            var sizeExpanded by remember { mutableStateOf(false) }
-            Box {
-                Button(
-                    onClick = { sizeExpanded = true }) {
-                    // sizes don't need translation
-                    Text(
-                        fontSize = textSize,
-                        text = selectedSize?.name ?: stringResource(R.string.wardrobe_select_size)
-                    )
-                }
-                DropdownMenu(
+                // size
+                var sizeExpanded by remember { mutableStateOf(false) }
+                ExposedDropdownMenuBox(
                     expanded = sizeExpanded,
-                    onDismissRequest = { sizeExpanded = false }
+                    onExpandedChange = { sizeExpanded = it }
                 ) {
-                    Size.entries.forEach { size ->
-                        DropdownMenuItem(
-                            text = { Text(size.name) },
-                            onClick = {
-                                onSizeSelected(size)
-                                sizeExpanded = false
-                            }
-                        )
+
+                    OutlinedTextField(
+                        value = selectedSize?.name ?: "",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = {
+                            Text(stringResource(R.string.wardrobe_select_size))
+                        },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = sizeExpanded)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
+                    )
+                    ExposedDropdownMenu(
+                        expanded = sizeExpanded,
+                        onDismissRequest = { sizeExpanded = false }
+                    ) {
+                        Size.entries.forEach { size ->
+                            DropdownMenuItem(
+                                text = { Text(size.name) },
+                                onClick = {
+                                    selectedSize = size
+                                    sizeExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // post
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(stringResource(R.string.wardrobe_post))
+                    Switch(checked = post, onCheckedChange = { post = it })
+                }
+
+                // tradeable
+                if (post) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(stringResource(R.string.wardrobe_tradeable))
+                        Switch(checked = tradeable, onCheckedChange = { tradeable = it })
                     }
                 }
             }
         }
+    )
+}
 
-        // post and trade
-        InputRow {
-            Button(onClick = { onPostChanged(!post) }) {
-                Text(
-                    fontSize = textSize,
-                    text = if (post) stringResource(R.string.wardrobe_published) else
-                        stringResource(R.string.wardrobe_post)
+@Composable
+fun ImageUploadBox(uri: Uri?, placeholderText: String, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(120.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        if (uri != null) {
+            AsyncImage(
+                model = uri,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    painter = painterResource(id = R.drawable.camera),
+                    contentDescription = null
                 )
-            }
-            if (post) {
-                Button(onClick = { onTradeableChanged(!tradeable) }) {
-                    Text(
-                        fontSize = textSize,
-                        text = if (tradeable) stringResource(R.string.wardrobe_tradeable)
-                        else stringResource(R.string.wardrobe_not_tradeable)
-                    )
-                }
+                Text(placeholderText, fontSize = 12.sp, textAlign = TextAlign.Center)
             }
         }
     }
 }
-
 
 fun createImageUri(context: Context): Uri {
     val contentResolver = context.contentResolver

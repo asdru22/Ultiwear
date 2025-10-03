@@ -71,7 +71,6 @@ fun BrowseScreen(browseViewModel: BrowseViewModel = viewModel(),
             .background(MaterialTheme.colorScheme.background)
     ) {
         TopBar(title = stringResource(R.string.browse))
-        Spacer(modifier = Modifier.height(16.dp))
 
         Box(
             modifier = Modifier

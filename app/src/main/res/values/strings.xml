@@ -30,4 +30,7 @@
     <string name="browse">Browse</string>
     <string name="event">Upcoming Events</string>
     <string name="profile">Profile</string>
+    <string name="wardrobe_details">Wardrobe Details</string>
+    <string name="wardrobe_back_picture_optional">Back Picture (optional)</string>
+    <string name="wardrobe_pictures">Pictures</string>
 </resources>
