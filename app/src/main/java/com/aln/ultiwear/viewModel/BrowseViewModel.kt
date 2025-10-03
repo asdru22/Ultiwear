@@ -11,7 +11,6 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 
 class BrowseViewModel(val handler: PostHandler = PostHandler()) : ViewModel() {
 
@@ -98,20 +97,7 @@ class BrowseViewModel(val handler: PostHandler = PostHandler()) : ViewModel() {
     }
 
     suspend fun hasUserExpressedInterest(itemId: String): Boolean {
-        val currentUser = Firebase.auth.currentUser ?: return false
-
-        return try {
-            val snapshot = Firebase.firestore.collection("trade_interests")
-                .whereEqualTo("itemId", itemId)
-                .whereEqualTo("interestedUserId", currentUser.uid)
-                .get()
-                .await()
-            snapshot.documents.isNotEmpty()
-        } catch (e: Exception) {
-            Log.e(tag, "Failed to check trade interest", e)
-            false
-        }
+        return handler.hasUserExpressedInterest(itemId)
     }
-
 }
 

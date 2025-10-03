@@ -32,20 +32,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.aln.ultiwear.data.GoogleAuthClient
 import com.aln.ultiwear.model.TabItem
-import com.aln.ultiwear.ui.screens.BrowseScreen
-import com.aln.ultiwear.ui.screens.EventScreen
-import com.aln.ultiwear.ui.screens.Footer
-import com.aln.ultiwear.ui.screens.LoginScreen
-import com.aln.ultiwear.ui.screens.SettingsScreen
-import com.aln.ultiwear.ui.screens.WardrobeScreen
+import com.aln.ultiwear.view.screens.BrowseScreen
+import com.aln.ultiwear.view.screens.EventScreen
+import com.aln.ultiwear.view.screens.Footer
+import com.aln.ultiwear.view.screens.LoginScreen
+import com.aln.ultiwear.view.screens.ProfileScreen
+import com.aln.ultiwear.view.screens.TradeScreen
+import com.aln.ultiwear.view.screens.WardrobeScreen
 import com.aln.ultiwear.ui.theme.LocalBottomBarBackground
 import com.aln.ultiwear.ui.theme.UltiwearTheme
 import com.aln.ultiwear.viewModel.AuthViewModel
+import com.aln.ultiwear.viewModel.BrowseViewModel
+import com.aln.ultiwear.viewModel.EventViewModel
 import com.aln.ultiwear.viewModel.WardrobeViewModel
 import kotlin.getValue
 
@@ -66,6 +68,10 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    private val wardrobeViewModel: WardrobeViewModel by viewModels()
+    private val browseViewModel: BrowseViewModel by viewModels()
+    private val eventViewModel: EventViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -107,8 +113,83 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
 
+    @Composable
+    fun AppWithBottomBar(
+        onSignOut: () -> Unit
+    ) {
+
+        var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
+
+
+        val tabs = listOf(
+            // wardrobe
+            TabItem(
+                "Wardrobe",
+                R.drawable.wardrobe
+            ) {
+                WardrobeScreen(wardrobeViewModel)
+            },
+            // browse
+            TabItem(
+                "Browse",
+                R.drawable.browse
+            ) {
+                BrowseScreen(
+                    wardrobeViewModel = wardrobeViewModel,
+                    browseViewModel = browseViewModel
+                )
+            },
+            // events
+            TabItem(
+                "Events",
+                R.drawable.events
+            ) { EventScreen(viewModel = eventViewModel) },
+            // trade
+            TabItem(
+                "Trade",
+                R.drawable.trade
+            ) {
+                TradeScreen(
+                    browseViewModel = browseViewModel,
+                    eventViewModel = eventViewModel
+                )
+            },
+            // profile
+            TabItem("Profile", R.drawable.profile) {
+                ProfileScreen(
+                    onSignOut = onSignOut
+                )
+            }
+        )
+
+        Scaffold(
+            bottomBar = {
+                Footer(
+                    Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .background(
+                            color = LocalBottomBarBackground.current,
+                            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+                        )
+                        .padding(vertical = 8.dp),
+                    tabs,
+                    selectedIndex,
+                    onTabSelected = { selectedIndex = it }
+                )
+            }
+        ) { innerPadding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
+                tabs[selectedIndex].content()
+            }
+        }
+    }
+}
 
 @Composable
 fun NoInternetScreen(onRetry: () -> Unit) {
@@ -125,61 +206,4 @@ fun NoInternetScreen(onRetry: () -> Unit) {
             Text(stringResource(R.string.try_again))
         }
     }
-}
-
-
-@Composable
-fun AppWithBottomBar(
-    onSignOut: () -> Unit
-) {
-
-    var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
-
-    val wardrobeViewModel: WardrobeViewModel = viewModel()
-
-    val tabs = listOf(
-        TabItem("Wardrobe", R.drawable.wardrobe) { WardrobeScreen(wardrobeViewModel) },
-        TabItem(
-            "Social",
-            R.drawable.social
-        ) { BrowseScreen(wardrobeViewModel = wardrobeViewModel) },
-        TabItem("Events", R.drawable.events) { EventScreen() },
-        TabItem("Trade", R.drawable.trade) { TradeScreen() },
-        TabItem("Settings", R.drawable.profile) {
-            SettingsScreen(
-                onSignOut = onSignOut
-            )
-        }
-    )
-
-    Scaffold(
-        bottomBar = {
-            Footer(
-                Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .background(
-                        color = LocalBottomBarBackground.current,
-                        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
-                    )
-                    .padding(vertical = 8.dp),
-                tabs,
-                selectedIndex,
-                onTabSelected = { selectedIndex = it }
-            )
-        }
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
-            tabs[selectedIndex].content()
-        }
-    }
-}
-
-@Composable
-fun TradeScreen() {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Trade") }
 }

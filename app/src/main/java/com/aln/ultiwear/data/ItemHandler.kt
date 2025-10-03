@@ -175,6 +175,17 @@ suspend fun deleteWardrobeItem(id: String) {
             Log.d(tag, "Post deleted")
         }
 
+        if (item?.tradeable == true) {
+            val tradeSnapshot = firestore.collection("trade_interests")
+                .whereEqualTo("itemId", id)
+                .get()
+                .await()
+
+            tradeSnapshot.documents.forEach { doc ->
+                doc.reference.delete().await()
+            }
+        }
+
     } catch (e: Exception) {
         Log.e(tag, "Failed to delete item, images, or post", e)
         throw e

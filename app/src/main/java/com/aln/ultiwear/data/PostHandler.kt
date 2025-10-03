@@ -1,9 +1,11 @@
 package com.aln.ultiwear.data
 
+import android.util.Log
 import com.aln.ultiwear.model.Post
 import com.aln.ultiwear.model.PostedWardrobeItem
 import com.aln.ultiwear.model.WardrobeItem
 import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
@@ -13,6 +15,8 @@ import kotlinx.coroutines.tasks.await
 
 
 class PostHandler(private val firestore: FirebaseFirestore = Firebase.firestore) {
+
+    private val tag = "PostHandler"
 
     suspend fun fetchPosts(limit: Long = 20): List<PostedWardrobeItem> = coroutineScope {
         // fetch wardrobe items
@@ -73,23 +77,46 @@ class PostHandler(private val firestore: FirebaseFirestore = Firebase.firestore)
                 likeCount++
             }
 
-            tx.set(postRef, mapOf("likes" to likeCount), SetOptions.merge())
+            tx.set(
+                postRef,
+                mapOf("likes" to likeCount),
+                SetOptions.merge()
+            )
             likeCount.toInt()
         }.await()
     }
 
     suspend fun hasUserLiked(wardrobeUid: String, userId: String): Boolean {
-        val postQuery = firestore.collection("posts")
+        val postQuery = firestore
+            .collection("posts")
             .whereEqualTo("wardrobeUid", wardrobeUid)
             .limit(1)
             .get()
             .await()
 
         val postDoc = postQuery.documents.firstOrNull() ?: return false
-        val likeSnap = postDoc.reference.collection("likes")
+        val likeSnap = postDoc.reference
+            .collection("likes")
             .document(userId)
             .get()
             .await()
         return likeSnap.exists()
+    }
+
+    suspend fun hasUserExpressedInterest(itemId: String): Boolean {
+        val currentUser = Firebase.auth.currentUser ?: return false
+
+        return try {
+            val snapshot = firestore
+                .collection("trade_interests")
+                .whereEqualTo("itemId", itemId)
+                .whereEqualTo("interestedUserId", currentUser.uid)
+                .get()
+                .await()
+            snapshot.documents.isNotEmpty()
+        } catch (e: Exception) {
+            Log.e(tag, "Failed to check trade interest", e)
+            false
+        }
     }
 }

@@ -1,4 +1,4 @@
-package com.aln.ultiwear.ui.dialogs
+package com.aln.ultiwear.view.dialogs
 
 import android.content.ContentValues
 import android.content.Context
@@ -12,9 +12,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -135,7 +137,7 @@ fun AddWardrobeItemDialog(
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 // photos
                 Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.Center,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     ImageUploadBox(
@@ -146,6 +148,7 @@ fun AddWardrobeItemDialog(
                             frontCameraLauncher.launch(frontCameraUri!!)
                         }
                     )
+                    Spacer(modifier = Modifier.width(8.dp))
                     ImageUploadBox(
                         uri = backImageUri,
                         placeholderText = stringResource(R.string.wardrobe_back_picture),

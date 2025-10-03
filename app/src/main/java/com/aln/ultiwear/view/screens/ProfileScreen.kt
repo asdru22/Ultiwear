@@ -1,4 +1,4 @@
-package com.aln.ultiwear.ui.screens
+package com.aln.ultiwear.view.screens
 
 
 import androidx.compose.foundation.background
@@ -34,7 +34,7 @@ import com.google.firebase.auth.auth
 import kotlinx.coroutines.launch
 
 @Composable
-fun SettingsScreen(
+fun ProfileScreen(
     onSignOut: () -> Unit
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current

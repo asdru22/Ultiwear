@@ -33,4 +33,5 @@
     <string name="wardrobe_details">Wardrobe Details</string>
     <string name="wardrobe_back_picture_optional">Back Picture (optional)</string>
     <string name="wardrobe_pictures">Pictures</string>
+    <string name="trade">Trades</string>
 </resources>

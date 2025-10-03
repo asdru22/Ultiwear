@@ -1,4 +1,4 @@
-package com.aln.ultiwear.ui.screens
+package com.aln.ultiwear.view.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,7 +31,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.aln.ultiwear.R
 import com.aln.ultiwear.model.tournament.TournamentUi
 import com.aln.ultiwear.viewModel.EventViewModel
@@ -40,7 +39,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 @Composable
-fun EventScreen(modifier: Modifier = Modifier, viewModel: EventViewModel = viewModel()) {
+fun EventScreen(modifier: Modifier = Modifier, viewModel: EventViewModel) {
     var searchActive by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
 

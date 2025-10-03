@@ -1,4 +1,4 @@
-package com.aln.ultiwear.ui.screens
+package com.aln.ultiwear.view.screens
 
 import android.net.Uri
 import androidx.compose.foundation.background
@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
@@ -23,20 +24,23 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.aln.ultiwear.R
 import com.aln.ultiwear.model.Condition
 import com.aln.ultiwear.model.Size
 import com.aln.ultiwear.model.WardrobeItem
-import com.aln.ultiwear.ui.dialogs.AddWardrobeItemDialog
-import com.aln.ultiwear.ui.dialogs.WardrobeItemDetailsDialog
+import com.aln.ultiwear.view.dialogs.AddWardrobeItemDialog
+import com.aln.ultiwear.view.dialogs.WardrobeItemDetailsDialog
 import com.aln.ultiwear.viewModel.WardrobeViewModel
 
 
@@ -125,8 +129,26 @@ fun WardrobeScreenContent(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxSize()
         ) {
-            items(wardrobeItems) { item ->
-                FrontImageCard(item) { onItemSelected(item) }
+            if (wardrobeItems.isEmpty()) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Your wardrobe is empty",
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                        )
+                    }
+                }
+            } else {
+                items(wardrobeItems) { item ->
+                    FrontImageCard(item) { onItemSelected(item) }
+                }
             }
         }
     }
@@ -146,7 +168,7 @@ fun FrontImageCard(item: WardrobeItem, onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(1f) // Square card
+            .aspectRatio(1f) // square card
             .clickable { onClick() },
         elevation = CardDefaults.cardElevation(4.dp)
     ) {

@@ -1,4 +1,4 @@
-package com.aln.ultiwear.ui.screens
+package com.aln.ultiwear.view.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box

@@ -1,4 +1,4 @@
-package com.aln.ultiwear.ui.dialogs
+package com.aln.ultiwear.view.dialogs
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
