@@ -1,5 +1,6 @@
 package com.aln.ultiwear.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -8,11 +9,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -50,10 +49,13 @@ import com.aln.ultiwear.viewModel.BrowseViewModel
 import com.aln.ultiwear.viewModel.WardrobeViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import com.google.firebase.firestore.firestore
+import kotlinx.coroutines.tasks.await
 
 @Composable
-fun BrowseScreen(browseViewModel: BrowseViewModel = viewModel(),
-                 wardrobeViewModel: WardrobeViewModel
+fun BrowseScreen(
+    browseViewModel: BrowseViewModel = viewModel(),
+    wardrobeViewModel: WardrobeViewModel
 ) {
     val items by browseViewModel.items
     val isLoading by browseViewModel.isLoading
@@ -118,7 +120,7 @@ fun BrowseScreenContent(
                 if (currentUser != null && combined.post != null) {
                     userLiked =
                         viewModel.handler.hasUserLiked(
-                            wardrobeUid =  combined.wardrobeUid,
+                            wardrobeUid = combined.wardrobeUid,
                             userId = currentUser.uid
                         )
                 }
@@ -135,7 +137,7 @@ fun BrowseScreenContent(
                     viewModel.toggleLike(combined)
                     userLiked = !userLiked
                 },
-                onTradeClicked = {}
+                viewModel = viewModel
             )
         }
     }
@@ -148,8 +150,8 @@ fun WardrobeItemCard(
     likes: Int,
     userLiked: Boolean,
     onLikeClicked: () -> Unit,
-    onTradeClicked: () -> Unit,
-    isOwner: Boolean
+    isOwner: Boolean,
+    viewModel: BrowseViewModel
 ) {
     Card(
         modifier = Modifier
@@ -187,7 +189,7 @@ fun WardrobeItemCard(
                 item = item,
                 likes = likes,
                 onLikeClicked = onLikeClicked,
-                onTradeClicked = onTradeClicked,
+                viewModel = viewModel,
                 userLiked = userLiked,
                 modifier = Modifier.fillMaxWidth(),
                 isOwner = isOwner
@@ -203,10 +205,11 @@ fun WardrobeItemInfoBar(
     likes: Int,
     userLiked: Boolean,
     onLikeClicked: () -> Unit,
-    onTradeClicked: () -> Unit,
+    viewModel: BrowseViewModel,
     modifier: Modifier = Modifier,
     isOwner: Boolean
 ) {
+    val currentUser = Firebase.auth.currentUser
     Row(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         modifier = modifier
@@ -235,21 +238,41 @@ fun WardrobeItemInfoBar(
             icon = R.drawable.like,
             text = likes.toString(),
             color = likeColor,
-            selected = userLiked,
+            filled = userLiked,
             onClick = if (isOwner) null else onLikeClicked
         )
 
         // tradeable
         if (item.tradeable) {
-            val tradeColor =
-                if (isOwner) Color(0xFF2196F3).copy(alpha = 0.4f)
-                else Color(0xFF2196F3)
+            var userInterested by remember { mutableStateOf(false) }
+
+            // preload from ViewModel
+            LaunchedEffect(item.id) {
+                userInterested = viewModel.hasUserExpressedInterest(item.id)
+            }
+
+            val tradeColor = if (isOwner) Color(0xFF2196F3).copy(alpha = 0.4f)
+            else Color(0xFF2196F3)
             OutlinedIconLabel(
                 icon = R.drawable.trade_small,
                 text = "",
                 color = tradeColor,
-                selected = false,
-                onClick = if (isOwner) null else onTradeClicked
+                filled = userInterested,
+                onClick = if (isOwner || currentUser == null || userInterested) null else {
+                    {
+                        viewModel.addTradeInterest(
+                            itemId = item.id,
+                            ownerId = item.owner,
+                            onSuccess = { userInterested = true },
+                            onFailure = { e ->
+                                Log.e(
+                                    "TradeInterest",
+                                    "Failed to add interest", e
+                                )
+                            }
+                        )
+                    }
+                }
             )
         }
     }
@@ -261,11 +284,11 @@ fun OutlinedIconLabel(
     icon: Int,
     text: String,
     color: Color,
-    selected: Boolean = false,
+    filled: Boolean = false,
     onClick: (() -> Unit)? = null
 ) {
-    val backgroundColor = if (selected) color else MaterialTheme.colorScheme.background
-    val contentColor = if (selected) MaterialTheme.colorScheme.background else color
+    val backgroundColor = if (filled) color else MaterialTheme.colorScheme.background
+    val contentColor = if (filled) MaterialTheme.colorScheme.background else color
     val shape = RoundedCornerShape(12.dp)
 
     Box(
