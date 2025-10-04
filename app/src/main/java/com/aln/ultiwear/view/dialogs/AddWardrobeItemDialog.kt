@@ -1,9 +1,6 @@
 package com.aln.ultiwear.view.dialogs
 
-import android.content.ContentValues
-import android.content.Context
 import android.net.Uri
-import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -50,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.aln.ultiwear.R
+import com.aln.ultiwear.data.createImageUri
 import com.aln.ultiwear.model.Condition
 import com.aln.ultiwear.model.Size
 
@@ -285,15 +283,4 @@ fun ImageUploadBox(uri: Uri?, placeholderText: String, onClick: () -> Unit) {
             }
         }
     }
-}
-
-fun createImageUri(context: Context): Uri {
-    val contentResolver = context.contentResolver
-    val contentValues = ContentValues().apply {
-        put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-        put(MediaStore.Images.Media.DISPLAY_NAME, "temp_${System.currentTimeMillis()}.jpg")
-    }
-    return contentResolver.insert(
-        MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues
-    )!!
 }

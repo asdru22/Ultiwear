@@ -29,11 +29,14 @@ import androidx.compose.ui.unit.dp
 import com.aln.ultiwear.R
 import com.aln.ultiwear.viewModel.BrowseViewModel
 import com.aln.ultiwear.viewModel.EventViewModel
+import com.aln.ultiwear.viewModel.WardrobeViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TradeScreen(browseViewModel: BrowseViewModel, eventViewModel: EventViewModel) {
+fun TradeScreen(browseViewModel: BrowseViewModel,
+                eventViewModel: EventViewModel,
+                wardrobeViewModel: WardrobeViewModel) {
 
 
     TradeMatchesScreen(
@@ -60,7 +63,7 @@ fun TradeScreen(browseViewModel: BrowseViewModel, eventViewModel: EventViewModel
         // tabs content
         when (selectedTab) {
             0 -> TradeMatchesScreen(browseViewModel, eventViewModel)
-            1 -> ManualTradeScreen()
+            1 -> ManualTradeScreen(wardrobeViewModel = wardrobeViewModel)
             2 -> QuickTradeScreen()
         }
     }
@@ -102,13 +105,6 @@ fun TradeScreenTabs(tabs: List<String>, selectedTab: Int, onTabSelected: (Int) -
             }
         }
     }
-}
-
-
-@Composable
-fun ManualTradeScreen() {
-    Text("Manual Trade")
-
 }
 
 @Composable

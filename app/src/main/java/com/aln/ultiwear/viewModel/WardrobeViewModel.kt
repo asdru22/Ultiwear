@@ -65,6 +65,7 @@ class WardrobeViewModel : ViewModel() {
         // detected by the launchedEffect that causes the browse screen to refresh
         _itemsChanged.value = !_itemsChanged.value
     }
+
     fun uploadItem(
         frontUri: Uri,
         backUri: Uri? = null,
@@ -105,6 +106,34 @@ class WardrobeViewModel : ViewModel() {
             }
         }
     }
+
+    suspend fun uploadItemAndReturn(
+        frontUri: Uri,
+        backUri: Uri? = null,
+        condition: Condition,
+        size: Size,
+        post: Boolean,
+        tradeable: Boolean
+    ): WardrobeItem? {
+        return withContext(Dispatchers.IO) {
+            val item = uploadWardrobeItem(
+                frontUri,
+                backUri,
+                condition,
+                size, post,
+                tradeable
+            )
+            if (item != null && post) {
+                try {
+                    makePost(item)
+                } catch (e: Exception) {
+                    Log.e(tag, "Failed to create post for ${item.id}", e)
+                }
+            }
+            item
+        }
+    }
+
 
     fun resetUploadState() {
         _uploadSuccess.value = false

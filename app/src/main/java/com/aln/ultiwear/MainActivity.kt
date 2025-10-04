@@ -152,7 +152,8 @@ class MainActivity : ComponentActivity() {
             ) {
                 TradeScreen(
                     browseViewModel = browseViewModel,
-                    eventViewModel = eventViewModel
+                    eventViewModel = eventViewModel,
+                    wardrobeViewModel = wardrobeViewModel
                 )
             },
             // profile

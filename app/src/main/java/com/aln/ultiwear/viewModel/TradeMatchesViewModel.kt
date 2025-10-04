@@ -33,7 +33,7 @@ class TradeMatchesViewModel(
 
     fun loadMatchesWhenReady() {
         viewModelScope.launch {
-            // Wait for browseViewModel and eventViewModel to load
+            // wait for browseViewModel and eventViewModel to load
             while (browseViewModel.items.value.isEmpty() || eventViewModel.events.isEmpty()) {
                 delay(100)
             }
