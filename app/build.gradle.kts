@@ -74,6 +74,7 @@ dependencies {
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    // includes zxing
 
     // compose
     implementation(libs.androidx.activity.compose)
@@ -90,6 +91,7 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
+    implementation(libs.core)
     // testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -103,6 +105,17 @@ dependencies {
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
+
+    // barcode scanning
+    // CameraX
+    implementation("androidx.camera:camera-core:1.5.0")
+    implementation("androidx.camera:camera-camera2:1.5.0")
+    implementation("androidx.camera:camera-lifecycle:1.5.0")
+    implementation("androidx.camera:camera-view:1.5.0")
+    // ML Kit Barcode Scanning
+    implementation("com.google.mlkit:barcode-scanning:17.3.0")
+
+    implementation("com.google.guava:guava:33.5.0-android")
 
     // other
     implementation(libs.coil.compose)

@@ -106,8 +106,3 @@ fun TradeScreenTabs(tabs: List<String>, selectedTab: Int, onTabSelected: (Int) -
         }
     }
 }
-
-@Composable
-fun QuickTradeScreen() {
-    Text("Quick Trade")
-}

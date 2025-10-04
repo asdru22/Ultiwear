@@ -21,6 +21,8 @@ firebaseFirestore = "26.0.1"
 lifecycleViewmodelCompose = "2.9.4"
 materialIconsCore = "1.7.8"
 retrofit = "3.0.0"
+androidCore = "3.3.0"
+core = "3.5.3"
 
 [libraries]
 
@@ -52,6 +54,8 @@ firebase-storage = { group = "com.google.firebase", name = "firebase-storage", v
 firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore", version.ref = "firebaseFirestore" }
 androidx-compose-material-icons-core = { group = "androidx.compose.material", name = "material-icons-core", version.ref = "materialIconsCore" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
+android-core = { group = "com.google.zxing", name = "android-core", version.ref = "androidCore" }
+core = { group = "com.google.zxing", name = "core", version.ref = "core" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
