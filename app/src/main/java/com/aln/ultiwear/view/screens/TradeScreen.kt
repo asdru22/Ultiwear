@@ -26,17 +26,23 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.aln.ultiwear.R
 import com.aln.ultiwear.viewModel.BrowseViewModel
 import com.aln.ultiwear.viewModel.EventViewModel
+import com.aln.ultiwear.viewModel.ManualTradeViewModel
 import com.aln.ultiwear.viewModel.WardrobeViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TradeScreen(browseViewModel: BrowseViewModel,
-                eventViewModel: EventViewModel,
-                wardrobeViewModel: WardrobeViewModel) {
+fun TradeScreen(
+    browseViewModel: BrowseViewModel,
+    eventViewModel: EventViewModel,
+    wardrobeViewModel: WardrobeViewModel
+) {
 
 
     TradeMatchesScreen(
@@ -60,11 +66,32 @@ fun TradeScreen(browseViewModel: BrowseViewModel,
         )
 
 
+        val manualTradeViewModel: ManualTradeViewModel = viewModel(
+            factory = viewModelFactory {
+                initializer {
+                    ManualTradeViewModel(
+                        wardrobeViewModel = wardrobeViewModel,
+                    )
+                }
+            }
+        )
+
         // tabs content
         when (selectedTab) {
-            0 -> TradeMatchesScreen(browseViewModel, eventViewModel)
-            1 -> ManualTradeScreen(wardrobeViewModel = wardrobeViewModel)
-            2 -> QuickTradeScreen(wardrobeViewModel = wardrobeViewModel)
+            0 -> TradeMatchesScreen(
+                browseViewModel = browseViewModel,
+                eventViewModel = eventViewModel
+            )
+
+            1 -> ManualTradeScreen(
+                wardrobeViewModel = wardrobeViewModel,
+                manualTradeViewModel = manualTradeViewModel
+            )
+
+            2 -> QuickTradeScreen(
+                wardrobeViewModel = wardrobeViewModel,
+                manualTradeViewModel = manualTradeViewModel
+            )
         }
     }
 }

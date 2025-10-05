@@ -36,6 +36,8 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.aln.ultiwear.data.GoogleAuthClient
 import com.aln.ultiwear.model.TabItem
+import com.aln.ultiwear.ui.theme.LocalBottomBarBackground
+import com.aln.ultiwear.ui.theme.UltiwearTheme
 import com.aln.ultiwear.view.screens.BrowseScreen
 import com.aln.ultiwear.view.screens.EventScreen
 import com.aln.ultiwear.view.screens.Footer
@@ -43,13 +45,10 @@ import com.aln.ultiwear.view.screens.LoginScreen
 import com.aln.ultiwear.view.screens.ProfileScreen
 import com.aln.ultiwear.view.screens.TradeScreen
 import com.aln.ultiwear.view.screens.WardrobeScreen
-import com.aln.ultiwear.ui.theme.LocalBottomBarBackground
-import com.aln.ultiwear.ui.theme.UltiwearTheme
 import com.aln.ultiwear.viewModel.AuthViewModel
 import com.aln.ultiwear.viewModel.BrowseViewModel
 import com.aln.ultiwear.viewModel.EventViewModel
 import com.aln.ultiwear.viewModel.WardrobeViewModel
-import kotlin.getValue
 
 class MainActivity : ComponentActivity() {
     private val googleAuthClient by lazy { GoogleAuthClient(this) }

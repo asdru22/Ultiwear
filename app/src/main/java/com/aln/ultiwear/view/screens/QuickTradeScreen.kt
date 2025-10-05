@@ -48,7 +48,10 @@ import androidx.core.graphics.createBitmap
 import androidx.core.graphics.set
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.aln.ultiwear.viewModel.QuickTradeViewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.aln.ultiwear.viewModel.ManualTradeViewModel
+import com.aln.ultiwear.viewModel.TradeSessionViewModel
 import com.aln.ultiwear.viewModel.WardrobeViewModel
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
@@ -60,9 +63,20 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun QuickTradeScreen(
-    viewModel: QuickTradeViewModel = viewModel(),
+    manualTradeViewModel: ManualTradeViewModel,
     wardrobeViewModel: WardrobeViewModel
 ) {
+
+    val viewModel: TradeSessionViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer {
+                TradeSessionViewModel(
+                    manualTradeViewModel = manualTradeViewModel
+                )
+            }
+        }
+    )
+
     var showScanner by remember { mutableStateOf(false) }
     var qrDialogVisible by remember { mutableStateOf(false) }
     var generatedQrBitmap by remember { mutableStateOf<Bitmap?>(null) }

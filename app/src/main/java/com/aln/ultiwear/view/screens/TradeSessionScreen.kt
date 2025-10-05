@@ -1,5 +1,6 @@
 package com.aln.ultiwear.view.screens
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
@@ -30,7 +31,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.aln.ultiwear.view.shared.FrontImageSelectableCard
-import com.aln.ultiwear.viewModel.QuickTradeViewModel
+import com.aln.ultiwear.viewModel.TradeSessionViewModel
 import com.aln.ultiwear.viewModel.WardrobeViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
@@ -40,7 +41,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun TradeSessionScreen(
     sessionId: String,
-    viewModel: QuickTradeViewModel,
+    viewModel: TradeSessionViewModel,
     wardrobeViewModel: WardrobeViewModel
 ) {
     val context = LocalContext.current
@@ -177,17 +178,8 @@ fun TradeSessionScreen(
                     coroutineScope.launch {
                         try {
                             viewModel.finalizeTrade(sessionId)
-                            Toast.makeText(
-                                context,
-                                "Trade finalized!",
-                                Toast.LENGTH_SHORT
-                            ).show()
                         } catch (e: Exception) {
-                            Toast.makeText(
-                                context,
-                                "Error: ${e.message}",
-                                Toast.LENGTH_LONG
-                            ).show()
+                            Log.e("TradeSessionScreen", "Error finalizing trade", e)
                         }
                     }
                 },

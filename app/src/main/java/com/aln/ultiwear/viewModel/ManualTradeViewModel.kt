@@ -100,6 +100,7 @@ class ManualTradeViewModel(
                 // upload trade record to Firestore
                 val givenItemIds = selectedGivenItems.value.map { it.id }
                 uploadTrade(
+                    userAId = Firebase.auth.currentUser?.uid,
                     userBId = userBId,
                     userAItems = givenItemIds,
                     userBItems = newItemIds,
@@ -139,13 +140,13 @@ class ManualTradeViewModel(
     }
 
     suspend fun uploadTrade(
+        userAId: String?,
         userBId: String,
         userAItems: List<String>,
         userBItems: List<String>,
         photoUri: Uri?
     ) {
         val firestore = FirebaseFirestore.getInstance()
-        val currentUserId = Firebase.auth.currentUser?.uid ?: return
 
         var photoUrl: String? = null
         if (photoUri != null) {
@@ -154,7 +155,7 @@ class ManualTradeViewModel(
 
         val trade = Trade(
             id = firestore.collection("trades").document().id,
-            userAId = currentUserId,
+            userAId = userAId?: "unknown",
             userBId = userBId,
             userAItems = userAItems,
             userBItems = userBItems,

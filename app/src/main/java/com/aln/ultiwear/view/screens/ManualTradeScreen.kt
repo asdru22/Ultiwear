@@ -47,9 +47,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import coil.compose.AsyncImage
 import com.aln.ultiwear.R
 import com.aln.ultiwear.data.createImageUri
@@ -61,17 +58,10 @@ import com.aln.ultiwear.viewModel.WardrobeViewModel
 
 @Composable
 fun ManualTradeScreen(
+    manualTradeViewModel: ManualTradeViewModel,
     wardrobeViewModel: WardrobeViewModel
 ) {
-    val manualTradeViewModel: ManualTradeViewModel = viewModel(
-        factory = viewModelFactory {
-            initializer {
-                ManualTradeViewModel(
-                    wardrobeViewModel = wardrobeViewModel,
-                )
-            }
-        }
-    )
+
 
     val isFinalizingTrade by manualTradeViewModel.isFinalizingTrade.collectAsState()
     val showAddReceivedDialog by manualTradeViewModel.showAddReceivedDialog.collectAsState()
