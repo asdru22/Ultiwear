@@ -4,14 +4,12 @@ import android.content.Context
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -57,6 +55,7 @@ import com.aln.ultiwear.R
 import com.aln.ultiwear.data.createImageUri
 import com.aln.ultiwear.model.WardrobeItem
 import com.aln.ultiwear.view.dialogs.AddWardrobeItemDialog
+import com.aln.ultiwear.view.shared.FrontImageSelectableCard
 import com.aln.ultiwear.viewModel.ManualTradeViewModel
 import com.aln.ultiwear.viewModel.WardrobeViewModel
 
@@ -287,32 +286,6 @@ fun TradePhotoBox(
                 )
             }
         }
-    }
-}
-
-
-@Composable
-fun FrontImageSelectableCard(item: WardrobeItem, isSelected: Boolean, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(1f)
-            .clickable { onClick() },
-        border = BorderStroke(
-            width = if (isSelected) 3.dp else 1.dp,
-            color = if (isSelected)
-                MaterialTheme.colorScheme.primary
-            else
-                MaterialTheme.colorScheme.outline
-        ),
-        elevation = CardDefaults.cardElevation(4.dp)
-    ) {
-        AsyncImage(
-            model = item.frontImageUrl,
-            contentDescription = "Front Image",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
     }
 }
 

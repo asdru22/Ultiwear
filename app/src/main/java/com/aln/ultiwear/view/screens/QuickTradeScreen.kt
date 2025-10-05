@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
@@ -24,14 +25,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
@@ -41,86 +47,146 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.set
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.aln.ultiwear.viewModel.QuickTradeViewModel
+import com.aln.ultiwear.viewModel.WardrobeViewModel
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.MultiFormatWriter
-import java.util.UUID
+import kotlinx.coroutines.launch
 
 
 @Composable
-fun QuickTradeScreen() {
-    // checks if qrcode scanner should be shown
+fun QuickTradeScreen(
+    viewModel: QuickTradeViewModel = viewModel(),
+    wardrobeViewModel: WardrobeViewModel
+) {
     var showScanner by remember { mutableStateOf(false) }
-    // stores the sessionID obtained from scanning
-    var scannedSessionId by remember { mutableStateOf<String?>(null) }
-    // stores the bitmap of the generated qrcode
+    var qrDialogVisible by remember { mutableStateOf(false) }
     var generatedQrBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
-    // ensure the user has granted camera access before showing any camera-related functionality
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    val sessionState by viewModel.sessionState.collectAsState()
+
     CameraPermissionWrapper {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
-        ) {
-            if (showScanner) {
-                // display camera preview (qrcode scanner) and close button
-                CameraPreviewView { qr ->
-                    scannedSessionId = qr
-                    showScanner = false
+        when {
+            sessionState?.isReady == true -> {
+                sessionState?.let { state ->
+                    TradeSessionScreen(
+                        sessionId = state.sessionId,
+                        viewModel = viewModel,
+                        wardrobeViewModel = wardrobeViewModel
+                    )
+                } ?: run {
+                    // if the session is delete/ends show the initial screen
+                    LaunchedEffect(Unit) {
+                        Toast.makeText(
+                            context,
+                            "Trade completed!",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            // qrcode scanner
+            showScanner -> {
+                CameraPreviewView { qr ->
+                    showScanner = false
+                    coroutineScope.launch {
+                        try {
+                            viewModel.joinTradeSession(qr)
+                        } catch (e: Exception) {
+                            Toast.makeText(
+                                context,
+                                "Error joining session: ${e.message}",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
                 Button(onClick = { showScanner = false }) {
                     Text("Close Scanner")
                 }
+            }
 
-                // if a qrcode has been scanned successfully, display the session id (debug)
-                scannedSessionId?.let { sessionId ->
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text("Scanned Session ID: $sessionId")
-                }
-
-            } else {
-                // open qrcode scanner
-                Button(
-                    onClick = { showScanner = true },
+            else -> {
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("Scan QR Code")
-                }
-                // generate qrcode
-                Button(
-                    onClick = {
-                        val sessionId = UUID.randomUUID().toString()
-                        // convert sessionId to qrcode bitmap
-                        generatedQrBitmap = generateQrCode(sessionId)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                ) {
-                    Text("Generate QR Code")
-                }
+                    Button(
+                        onClick = { showScanner = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                    ) {
+                        Text("Scan QR Code")
+                    }
 
-                // display the generated qrcode
-                generatedQrBitmap?.let { bitmap ->
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Image(
-                        bitmap = bitmap.asImageBitmap(),
-                        contentDescription = "Generated QR Code",
-                        modifier = Modifier.size(200.dp)
-                    )
+                    Button(
+                        onClick = {
+                            coroutineScope.launch {
+                                try {
+                                    val sessionId = viewModel.createTradeSession()
+                                    generatedQrBitmap = generateQrCode(sessionId)
+                                    qrDialogVisible = true
+                                } catch (e: Exception) {
+                                    Toast.makeText(
+                                        context,
+                                        "Error creating session: ${e.message}",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp)
+                    ) {
+                        Text("Start Trade Session")
+                    }
                 }
             }
         }
+
+        LaunchedEffect(sessionState) {
+            if (sessionState?.isReady == true) {
+                qrDialogVisible = false
+            }
+        }
+
+        // dialog that shows the generated qrcode
+        if (qrDialogVisible && generatedQrBitmap != null) {
+            AlertDialog(
+                onDismissRequest = { qrDialogVisible = false },
+                title = { Text("Scan to Join") },
+                text = {
+                    Image(
+                        bitmap = generatedQrBitmap!!.asImageBitmap(),
+                        contentDescription = "Trade Session QR",
+                        modifier = Modifier.size(250.dp)
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = { qrDialogVisible = false }) {
+                        Text("Close")
+                    }
+                }
+            )
+        }
     }
 }
+
 
 @Composable
 fun CameraPermissionWrapper(content: @Composable () -> Unit) {
@@ -158,7 +224,7 @@ fun CameraPermissionWrapper(content: @Composable () -> Unit) {
     } else {
         Box(
             modifier = Modifier.fillMaxSize(),
-            contentAlignment = androidx.compose.ui.Alignment.Center
+            contentAlignment = Alignment.Center
         ) {
             Text("Camera permission required")
         }

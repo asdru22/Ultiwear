@@ -64,7 +64,7 @@ fun TradeScreen(browseViewModel: BrowseViewModel,
         when (selectedTab) {
             0 -> TradeMatchesScreen(browseViewModel, eventViewModel)
             1 -> ManualTradeScreen(wardrobeViewModel = wardrobeViewModel)
-            2 -> QuickTradeScreen()
+            2 -> QuickTradeScreen(wardrobeViewModel = wardrobeViewModel)
         }
     }
 }
