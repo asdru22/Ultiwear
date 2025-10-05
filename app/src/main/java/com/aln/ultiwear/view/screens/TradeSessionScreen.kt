@@ -58,7 +58,7 @@ fun TradeSessionScreen(
     LaunchedEffect(sessionId) {
         Firebase.firestore.collection("trade_sessions")
             .document(sessionId)
-            .collection("pendingTrades")
+            .collection("pending_trades")
             .addSnapshotListener { snapshot, _ ->
                 pendingTrades = snapshot?.documents
                     ?.mapNotNull { it.data }

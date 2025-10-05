@@ -138,8 +138,10 @@ class TradeSessionViewModel(
             .collection("trade_sessions")
             .document(sessionId)
 
-        val participants = sessionRef.get().await()
-            .get("participants") as? List<*> ?: emptyList<String>()
+        val snapshot = sessionRef.get().await()
+        val participants = (snapshot.get("participants") as? List<*>)
+            ?.mapNotNull { it as? String } ?: emptyList()
+
         // determine the other participant
         val otherUser = participants.firstOrNull { it != currentUser.uid }
             ?: throw Exception("No recipient")
@@ -155,7 +157,7 @@ class TradeSessionViewModel(
         // create a pendingTrade
         val trade = PendingTrade(
             fromUser = currentUser.uid,
-            toUser = otherUser as String,
+            toUser = otherUser,
             itemId = item.id,
             frontImageUrl = item.frontImageUrl,
             confirmedBySender = false,
