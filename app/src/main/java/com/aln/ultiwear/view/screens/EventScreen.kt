@@ -1,6 +1,7 @@
 package com.aln.ultiwear.view.screens
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
@@ -17,6 +18,7 @@ import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -91,23 +93,34 @@ fun EventScreen(modifier: Modifier = Modifier, viewModel: EventViewModel) {
             }
         )
 
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(filteredTournaments) { tournament ->
-                TournamentCard(
-                    tournament = tournament,
-                    displayFormatter = displayFormatter,
-                    viewModel = viewModel
-                )
+        if (filteredTournaments.isEmpty()) {
+            // show loading indicator when no tournaments are available yet
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(filteredTournaments) { tournament ->
+                    TournamentCard(
+                        tournament = tournament,
+                        displayFormatter = displayFormatter,
+                        viewModel = viewModel
+                    )
+                }
             }
         }
     }
 }
-
 
 @Composable
 fun TournamentCard(

@@ -86,163 +86,118 @@ fun QuickTradeScreen(
 
     val sessionState by viewModel.sessionState.collectAsState()
 
-    CameraPermissionWrapper {
-        when {
-            sessionState?.isReady == true -> {
-                sessionState?.let { state ->
-                    TradeSessionScreen(
-                        sessionId = state.sessionId,
-                        viewModel = viewModel,
-                        wardrobeViewModel = wardrobeViewModel
-                    )
-                } ?: run {
-                    // if the session is delete/ends show the initial screen
-                    LaunchedEffect(Unit) {
+    when {
+        sessionState?.isReady == true -> {
+            sessionState?.let { state ->
+                TradeSessionScreen(
+                    sessionId = state.sessionId,
+                    viewModel = viewModel,
+                    wardrobeViewModel = wardrobeViewModel
+                )
+            } ?: run {
+                // if the session is delete/ends show the initial screen
+                LaunchedEffect(Unit) {
+                    Toast.makeText(
+                        context,
+                        "Trade completed!",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
+
+        // qrcode scanner
+        showScanner -> {
+            CameraPreviewView { qr ->
+                showScanner = false
+                coroutineScope.launch {
+                    try {
+                        viewModel.joinTradeSession(qr)
+                    } catch (e: Exception) {
                         Toast.makeText(
                             context,
-                            "Trade completed!",
-                            Toast.LENGTH_SHORT
+                            "Error joining session: ${e.message}",
+                            Toast.LENGTH_LONG
                         ).show()
                     }
                 }
             }
 
-            // qrcode scanner
-            showScanner -> {
-                CameraPreviewView { qr ->
-                    showScanner = false
-                    coroutineScope.launch {
-                        try {
-                            viewModel.joinTradeSession(qr)
-                        } catch (e: Exception) {
-                            Toast.makeText(
-                                context,
-                                "Error joining session: ${e.message}",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
-                    }
-                }
-
-                Spacer(Modifier.height(16.dp))
-                Button(onClick = { showScanner = false }) {
-                    Text("Close Scanner")
-                }
+            Spacer(Modifier.height(16.dp))
+            Button(onClick = { showScanner = false }) {
+                Text("Close Scanner")
             }
+        }
 
-            else -> {
-                Column(
+        else -> {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Button(
+                    onClick = { showScanner = true },
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
                 ) {
-                    Button(
-                        onClick = { showScanner = true },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                    ) {
-                        Text("Scan QR Code")
-                    }
+                    Text("Scan QR Code")
+                }
 
-                    Button(
-                        onClick = {
-                            coroutineScope.launch {
-                                try {
-                                    val sessionId = viewModel.createTradeSession()
-                                    generatedQrBitmap = generateQrCode(sessionId)
-                                    qrDialogVisible = true
-                                } catch (e: Exception) {
-                                    Toast.makeText(
-                                        context,
-                                        "Error creating session: ${e.message}",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
+                Button(
+                    onClick = {
+                        coroutineScope.launch {
+                            try {
+                                val sessionId = viewModel.createTradeSession()
+                                generatedQrBitmap = generateQrCode(sessionId)
+                                qrDialogVisible = true
+                            } catch (e: Exception) {
+                                Toast.makeText(
+                                    context,
+                                    "Error creating session: ${e.message}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                    ) {
-                        Text("Start Trade Session")
-                    }
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                ) {
+                    Text("Start Trade Session")
                 }
             }
-        }
-
-        LaunchedEffect(sessionState) {
-            if (sessionState?.isReady == true) {
-                qrDialogVisible = false
-            }
-        }
-
-        // dialog that shows the generated qrcode
-        if (qrDialogVisible && generatedQrBitmap != null) {
-            AlertDialog(
-                onDismissRequest = { qrDialogVisible = false },
-                title = { Text("Scan to Join") },
-                text = {
-                    Image(
-                        bitmap = generatedQrBitmap!!.asImageBitmap(),
-                        contentDescription = "Trade Session QR",
-                        modifier = Modifier.size(250.dp)
-                    )
-                },
-                confirmButton = {
-                    TextButton(onClick = { qrDialogVisible = false }) {
-                        Text("Close")
-                    }
-                }
-            )
         }
     }
-}
 
+    LaunchedEffect(sessionState) {
+        if (sessionState?.isReady == true) {
+            qrDialogVisible = false
+        }
+    }
 
-@Composable
-fun CameraPermissionWrapper(content: @Composable () -> Unit) {
-    val context = LocalContext.current
-    // check if the app has camera access
-    var hasPermission by remember {
-        mutableStateOf(
-            ContextCompat.checkSelfPermission(
-                context,
-                CAMERA
-            ) == PackageManager.PERMISSION_GRANTED
+    // dialog that shows the generated qrcode
+    if (qrDialogVisible && generatedQrBitmap != null) {
+        AlertDialog(
+            onDismissRequest = { qrDialogVisible = false },
+            title = { Text("Scan to Join") },
+            text = {
+                Image(
+                    bitmap = generatedQrBitmap!!.asImageBitmap(),
+                    contentDescription = "Trade Session QR",
+                    modifier = Modifier.size(250.dp)
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { qrDialogVisible = false }) {
+                    Text("Close")
+                }
+            }
         )
     }
 
-    // request permissions from the user
-    val launcher =
-        rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.RequestPermission()
-        ) { granted ->
-            hasPermission = granted
-        }
-
-    // runs when the composable enters composition
-    LaunchedEffect(Unit) {
-        // if the camera permission is not granted, it
-        // launches the permission request dialog
-        if (!hasPermission) {
-            launcher.launch(CAMERA)
-        }
-    }
-
-    if (hasPermission) {
-        // if has permission, shows the content passed to the wrapper
-        content()
-    } else {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("Camera permission required")
-        }
-    }
 }
 
 @OptIn(ExperimentalGetImage::class)

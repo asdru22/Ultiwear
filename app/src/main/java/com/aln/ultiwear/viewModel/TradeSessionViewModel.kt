@@ -130,11 +130,11 @@ class TradeSessionViewModel(
     }
 
     suspend fun sendItemToOtherUser(sessionId: String, itemId: String) {
-        val currentUser = Firebase.auth.currentUser
+        val currentUser = auth.currentUser
             ?: throw Exception("User not logged in")
 
         // get reference to the trade session
-        val sessionRef = Firebase.firestore
+        val sessionRef = firestore
             .collection("trade_sessions")
             .document(sessionId)
 
@@ -147,7 +147,7 @@ class TradeSessionViewModel(
             ?: throw Exception("No recipient")
 
         // fetch the item to send from the current users wardrobe
-        val item = Firebase.firestore.collection("wardrobe")
+        val item = firestore.collection("wardrobe")
             .document(itemId)
             .get()
             .await()
@@ -171,9 +171,9 @@ class TradeSessionViewModel(
 
     suspend fun finalizeTrade(sessionId: String) {
         // get the current user, trade session, and all pending trades
-        val currentUser = Firebase.auth.currentUser
+        val currentUser = auth.currentUser
             ?: throw Exception("User not logged in")
-        val sessionRef = Firebase.firestore
+        val sessionRef = firestore
             .collection("trade_sessions")
             .document(sessionId)
         val pendingRef = sessionRef.collection("pending_trades")
@@ -203,7 +203,7 @@ class TradeSessionViewModel(
             if (trade.confirmedBySender && trade.confirmedByReceiver) {
                 // add them to the finalized trades
                 finalizedTrades.add(trade)
-                val itemSnapshot = Firebase.firestore
+                val itemSnapshot = firestore
                     .collection("wardrobe")
                     .document(trade.itemId)
                     .get()
@@ -213,7 +213,7 @@ class TradeSessionViewModel(
                 val item = itemSnapshot.toObject(WardrobeItem::class.java)
                     ?: continue
                 // transfer the ownership
-                Firebase.firestore.collection("wardrobe")
+                firestore.collection("wardrobe")
                     .document(item.id)
                     .set(item.copy(owner = trade.toUser))
                     .await()

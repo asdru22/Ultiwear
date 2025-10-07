@@ -1,9 +1,13 @@
 package com.aln.ultiwear
 
+import android.Manifest.permission.CAMERA
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -32,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.aln.ultiwear.data.GoogleAuthClient
@@ -75,6 +80,27 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // launcher to request permission
+        val requestCameraPermission =
+            registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+                if (!granted) {
+                    Toast.makeText(
+                        this,
+                        "App will behave unexpectedly without camera permission",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+
+        // check and request on startup
+        if (ContextCompat.checkSelfPermission(
+                this,
+                CAMERA
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestCameraPermission.launch(CAMERA)
+        }
 
         setContent {
             UltiwearTheme {
