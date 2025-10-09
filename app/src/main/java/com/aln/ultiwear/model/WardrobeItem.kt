@@ -23,7 +23,8 @@ data class WardrobeItem(
     val frontImageUrl: String = "",
     val backImageUrl: String? = null,
     val tradeable: Boolean = false,
-    val posted: Boolean = false
+    val posted: Boolean = false,
+    val owned: Boolean = true
 ) {
     // ignored by firebase
     @get:Exclude

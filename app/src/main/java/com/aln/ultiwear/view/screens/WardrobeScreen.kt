@@ -47,7 +47,7 @@ import com.aln.ultiwear.viewModel.WardrobeViewModel
 @Composable
 fun WardrobeScreen(viewModel: WardrobeViewModel) {
     val showDialog by viewModel.showDialog.collectAsState()
-    val wardrobeItems by viewModel.wardrobeItems.collectAsState()
+    val wardrobeItems by viewModel.ownedWardrobeItems.collectAsState()
     val selectedItem by viewModel.selectedItem.collectAsState()
     val isUploading by viewModel.isUploading.collectAsState()
     val uploadSuccess by viewModel.uploadSuccess.collectAsState()

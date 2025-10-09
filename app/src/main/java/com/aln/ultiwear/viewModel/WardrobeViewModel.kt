@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aln.ultiwear.data.deleteWardrobeItem
+import com.aln.ultiwear.data.hideWardrobeItem
 import com.aln.ultiwear.data.listenToWardrobeItems
 import com.aln.ultiwear.data.makePost
 import com.aln.ultiwear.data.uploadWardrobeItem
@@ -26,7 +27,9 @@ class WardrobeViewModel : ViewModel() {
 
     // mutable internal state & readonly state exposed to the UI
     private val _wardrobeItems = MutableStateFlow<List<WardrobeItem>>(emptyList())
-    val wardrobeItems: StateFlow<List<WardrobeItem>> = _wardrobeItems.asStateFlow()
+
+    private val _ownedWardrobeItems = MutableStateFlow<List<WardrobeItem>>(emptyList())
+    val ownedWardrobeItems: StateFlow<List<WardrobeItem>> = _ownedWardrobeItems.asStateFlow()
 
     private val _selectedItem = MutableStateFlow<WardrobeItem?>(null)
     val selectedItem: StateFlow<WardrobeItem?> = _selectedItem.asStateFlow()
@@ -48,6 +51,7 @@ class WardrobeViewModel : ViewModel() {
         if (currentUserId != null) {
             listenToWardrobeItems(currentUserId) { items ->
                 _wardrobeItems.value = items
+                _ownedWardrobeItems.value = items.filter { it.owned }
             }
         }
     }
@@ -60,7 +64,7 @@ class WardrobeViewModel : ViewModel() {
         _selectedItem.value = item
     }
 
-    private fun notifyItemsChanged() {
+    fun notifyItemsChanged() {
         // this value is flipped every time the function is called,
         // detected by the launchedEffect that causes the browse screen to refresh
         _itemsChanged.value = !_itemsChanged.value
@@ -149,4 +153,19 @@ class WardrobeViewModel : ViewModel() {
             }
         }
     }
+
+    fun hideItem(id: String) {
+        viewModelScope.launch {
+            try {
+                hideWardrobeItem(id)
+                notifyItemsChanged()
+            } catch (e: Exception) {
+                Log.e(tag, "Failed to hide item", e)
+            }
+        }
+    }
+    fun getFrontImage(itemId: String): String? {
+        return _wardrobeItems.value.find { it.id == itemId }?.frontImageUrl
+    }
+
 }

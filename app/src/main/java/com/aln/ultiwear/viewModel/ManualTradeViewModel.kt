@@ -76,7 +76,7 @@ class ManualTradeViewModel(
             try {
                 // remove given items from wardrobe
                 selectedGivenItems.value.forEach { item ->
-                    wardrobeViewModel.deleteItem(item.id)
+                    wardrobeViewModel.hideItem(item.id)
                 }
 
                 // upload received items to wardrobe

@@ -114,13 +114,18 @@ fun ManualTradeContent(
     manualTradeViewModel: ManualTradeViewModel,
     context: Context
 ) {
-    val wardrobeItems by wardrobeViewModel.wardrobeItems.collectAsState()
-    val selectedGivenItems by manualTradeViewModel.selectedGivenItems.collectAsState()
-    val receivedItems by manualTradeViewModel.receivedItems.collectAsState()
+    val wardrobeItems by wardrobeViewModel
+        .ownedWardrobeItems.collectAsState()
+    val selectedGivenItems by manualTradeViewModel
+        .selectedGivenItems.collectAsState()
+    val receivedItems by manualTradeViewModel
+        .receivedItems.collectAsState()
     var photoCaptureUri by remember { mutableStateOf<Uri?>(null) }
 
     val photoLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.TakePicture()
+        ) { success ->
             if (success) manualTradeViewModel.setTradePhoto(photoCaptureUri)
         }
 
@@ -193,7 +198,10 @@ fun ManualTradeContent(
                                 RoundedCornerShape(8.dp)
                             )
                     ) {
-                        Icon(Icons.Filled.Add, contentDescription = "Add received item")
+                        Icon(
+                            Icons.Filled.Add,
+                            contentDescription = "Add received item"
+                        )
                     }
                 }
             }

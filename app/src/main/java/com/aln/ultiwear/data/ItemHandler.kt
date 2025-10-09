@@ -99,6 +99,37 @@ fun listenToWardrobeItems(
         }
 }
 
+suspend fun hideWardrobeItem(id: String) {
+    val firestore: FirebaseFirestore = Firebase.firestore
+    try {
+        val snapshot = firestore.collection("wardrobe")
+            .document(id).get().await()
+        val item = snapshot.toObject(WardrobeItem::class.java)
+
+        // mark as not owned
+        if (item != null) {
+            firestore.collection("wardrobe")
+                .document(id)
+                .update(
+                    mapOf(
+                        "owned" to false,
+                        "posted" to false,
+                        "tradeable" to false
+                    )
+                )
+                .await()
+            Log.d(tag, "Wardrobe item marked as not owned and not posted")
+        }
+
+        deleteAssociatedData(item)
+
+    } catch (e: Exception) {
+        Log.e(tag, "Failed to mark item or associated data as inactive", e)
+        throw e
+    }
+}
+
+
 suspend fun deleteWardrobeItem(id: String) {
     val firestore: FirebaseFirestore = Firebase.firestore
     try {
@@ -122,32 +153,40 @@ suspend fun deleteWardrobeItem(id: String) {
             .document(id).delete().await()
         Log.d(tag, "Wardrobe item deleted")
 
-        // delete associated post if present
-        val postSnapshot = firestore.collection("posts")
-            .whereEqualTo("wardrobeUid", id)
-            .limit(1)
-            .get()
-            .await()
-
-        if (postSnapshot.documents.isNotEmpty()) {
-            postSnapshot.documents[0].reference.delete().await()
-            Log.d(tag, "Post deleted")
-        }
-
-        if (item?.tradeable == true) {
-            val tradeSnapshot = firestore.collection("trade_interests")
-                .whereEqualTo("itemId", id)
-                .get()
-                .await()
-
-            tradeSnapshot.documents.forEach { doc ->
-                doc.reference.delete().await()
-            }
-        }
+        deleteAssociatedData(item)
 
     } catch (e: Exception) {
         Log.e(tag, "Failed to delete item, images, or post", e)
         throw e
+    }
+}
+
+
+private suspend fun deleteAssociatedData(item: WardrobeItem?){
+    val firestore: FirebaseFirestore = Firebase.firestore
+    val id = item?.id ?: return
+    // delete associated post if present
+    val postSnapshot = firestore.collection("posts")
+        .whereEqualTo("wardrobeUid", id)
+        .limit(1)
+        .get()
+        .await()
+
+    if (postSnapshot.documents.isNotEmpty()) {
+        postSnapshot.documents[0].reference.delete().await()
+        Log.d(tag, "Post deleted")
+    }
+
+    // delete trade interest
+    if (item.tradeable) {
+        val tradeSnapshot = firestore.collection("trade_interests")
+            .whereEqualTo("itemId", id)
+            .get()
+            .await()
+
+        tradeSnapshot.documents.forEach { doc ->
+            doc.reference.delete().await()
+        }
     }
 }
 

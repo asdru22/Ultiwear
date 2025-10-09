@@ -1,13 +1,9 @@
 package com.aln.ultiwear.view.screens
 
-import android.Manifest.permission.CAMERA
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.view.ViewGroup
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ExperimentalGetImage
@@ -19,14 +15,15 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -39,6 +36,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -71,6 +69,7 @@ fun QuickTradeScreen(
         factory = viewModelFactory {
             initializer {
                 TradeSessionViewModel(
+                    wardrobeViewModel = wardrobeViewModel,
                     manualTradeViewModel = manualTradeViewModel
                 )
             }
@@ -108,25 +107,25 @@ fun QuickTradeScreen(
 
         // qrcode scanner
         showScanner -> {
-            CameraPreviewView { qr ->
-                showScanner = false
-                coroutineScope.launch {
-                    try {
-                        viewModel.joinTradeSession(qr)
-                    } catch (e: Exception) {
-                        Toast.makeText(
-                            context,
-                            "Error joining session: ${e.message}",
-                            Toast.LENGTH_LONG
-                        ).show()
+            CameraPreviewView(
+                onQrScanned = { qr ->
+                    showScanner = false
+                    coroutineScope.launch {
+                        try {
+                            viewModel.joinTradeSession(qr)
+                        } catch (e: Exception) {
+                            Toast.makeText(
+                                context,
+                                "Error joining session: ${e.message}",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
                     }
+                },
+                closeScanner = {
+                    showScanner = false
                 }
-            }
-
-            Spacer(Modifier.height(16.dp))
-            Button(onClick = { showScanner = false }) {
-                Text("Close Scanner")
-            }
+            )
         }
 
         else -> {
@@ -202,26 +201,52 @@ fun QuickTradeScreen(
 
 @OptIn(ExperimentalGetImage::class)
 @Composable
-fun CameraPreviewView(onQrScanned: (String) -> Unit) {
+fun CameraPreviewView(onQrScanned: (String) -> Unit, closeScanner: () -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    // shows the camera feed
     val previewView = remember { PreviewView(context) }
 
-    // wraps previewView in a composable
-    AndroidView(
-        factory = {
-            previewView.apply {
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                )
-            }
-        },
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(400.dp)
-    )
+            .clip(RoundedCornerShape(12.dp))
+    ) {
+        // camera feed
+        AndroidView(
+            factory = {
+                previewView.apply {
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+                }
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // close button overlay
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 16.dp),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            Button(
+                onClick = { closeScanner() },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.4f),
+                    contentColor = androidx.compose.ui.graphics.Color.White
+                ),
+                shape = RoundedCornerShape(50)
+            ) {
+                Text(
+                    "Close Scanner",
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                )
+            }
+        }
+    }
 
     LaunchedEffect(previewView) {
         previewView.post {
@@ -241,26 +266,25 @@ fun CameraPreviewView(onQrScanned: (String) -> Unit) {
                 // get the object responsible for recognizing QR codes from camera frames
                 val barcodeScanner = BarcodeScanning.getClient()
 
-                // imageAnalysis processes each frame from the camera.
+                // imageAnalysis processes each frame from the camera
                 val imageAnalysis = ImageAnalysis.Builder()
-                    // tells the analyzer to discard older frames if it can’t keep up.
+                    // tells the analyzer to discard older frames if it can’t keep up
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                     .build()
 
                 // set a frame analyzer that gets called for each frame
                 imageAnalysis.setAnalyzer(
-                    // ensure that the analyzer runs on the main thread.
+                    // ensure that the analyzer runs on the main thread
                     ContextCompat.getMainExecutor(context)
                 ) { imageProxy ->
                     //  get actual camera frame as an Image object
                     val mediaImage = imageProxy.image
                     if (mediaImage != null) {
                         // convert the mediaImage into an InputImage
-                        val inputImage =
-                            InputImage.fromMediaImage(
-                                mediaImage,
-                                imageProxy.imageInfo.rotationDegrees
-                            )
+                        val inputImage = InputImage.fromMediaImage(
+                            mediaImage,
+                            imageProxy.imageInfo.rotationDegrees
+                        )
                         // send the InputImage the barcodeScanner for analysis
                         barcodeScanner.process(inputImage)
                             .addOnSuccessListener { barcodes ->

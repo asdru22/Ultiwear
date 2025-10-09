@@ -12,27 +12,33 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.aln.ultiwear.R
+import com.aln.ultiwear.view.dialogs.TradesHistoryDialog
 import com.aln.ultiwear.viewModel.BrowseViewModel
 import com.aln.ultiwear.viewModel.EventViewModel
 import com.aln.ultiwear.viewModel.ManualTradeViewModel
+import com.aln.ultiwear.viewModel.TradesViewModel
 import com.aln.ultiwear.viewModel.WardrobeViewModel
 
 
@@ -43,21 +49,35 @@ fun TradeScreen(
     eventViewModel: EventViewModel,
     wardrobeViewModel: WardrobeViewModel
 ) {
-
-
-    TradeMatchesScreen(
-        browseViewModel = browseViewModel,
-        eventViewModel = eventViewModel
-    )
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Matches", "Manual Trade", "Quick Trade")
+    var showTradesDialog by remember { mutableStateOf(false) }
+
+    // Initialize the TradesViewModel
+    val tradesViewModel: TradesViewModel = viewModel()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        TopBar(title = stringResource(R.string.trade))
+        TopBar(
+            title = stringResource(R.string.trade),
+            content = {
+                IconButton(
+                    onClick = {
+                        showTradesDialog = true
+                        tradesViewModel.loadTrades()
+                    }
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.trade_history),
+                        contentDescription = "View Trades",
+                        tint = MaterialTheme.colorScheme.onBackground
+                    )
+                }
+            }
+        )
 
         TradeScreenTabs(
             tabs = tabs,
@@ -65,18 +85,13 @@ fun TradeScreen(
             onTabSelected = { selectedTab = it }
         )
 
-
         val manualTradeViewModel: ManualTradeViewModel = viewModel(
             factory = viewModelFactory {
-                initializer {
-                    ManualTradeViewModel(
-                        wardrobeViewModel = wardrobeViewModel,
-                    )
-                }
+                initializer { ManualTradeViewModel(wardrobeViewModel = wardrobeViewModel) }
             }
         )
 
-        // tabs content
+        // Tabs content
         when (selectedTab) {
             0 -> TradeMatchesScreen(
                 browseViewModel = browseViewModel,
@@ -93,6 +108,15 @@ fun TradeScreen(
                 manualTradeViewModel = manualTradeViewModel
             )
         }
+    }
+
+    // trades history
+    if (showTradesDialog) {
+        TradesHistoryDialog(
+            wardrobeViewModel = wardrobeViewModel,
+            tradesViewModel = tradesViewModel,
+            onDismiss = { showTradesDialog = false }
+        )
     }
 }
 

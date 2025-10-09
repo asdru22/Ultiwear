@@ -18,6 +18,7 @@ import kotlinx.coroutines.tasks.await
 import java.util.UUID
 
 class TradeSessionViewModel(
+    private val wardrobeViewModel: WardrobeViewModel,
     private val manualTradeViewModel: ManualTradeViewModel
 ) : ViewModel() {
 
@@ -212,11 +213,25 @@ class TradeSessionViewModel(
                 // convert the document into a WardrobeItem
                 val item = itemSnapshot.toObject(WardrobeItem::class.java)
                     ?: continue
-                // transfer the ownership
+
+                // hide the item that was sent
+                wardrobeViewModel.hideItem(item.id)
+
+                // create a copy
+                val newItem = item.copy(
+                    id = firestore.collection("wardrobe").document().id,
+                    owner = trade.toUser,
+                    owned = true,
+                    posted = false
+                )
+
                 firestore.collection("wardrobe")
-                    .document(item.id)
-                    .set(item.copy(owner = trade.toUser))
+                    .document(newItem.id)
+                    .set(newItem)
                     .await()
+
+
+                Log.d(tag, "Created new item ${newItem.id} for ${trade.toUser}")
 
                 // delete the pending trade document
                 doc.reference.delete().await()
@@ -225,7 +240,8 @@ class TradeSessionViewModel(
 
         // check if the trade record should be uploaded
         val sessionSnapshot = sessionRef.get().await()
-        val tradeAlreadyUploaded = sessionSnapshot.getBoolean("tradeUploaded") ?: false
+        val tradeAlreadyUploaded = sessionSnapshot.getBoolean("tradeUploaded")
+            ?: false
 
         // only upload if theres at least one finalized trade and it hasn't been uploaded yet
         if (!tradeAlreadyUploaded && finalizedTrades.isNotEmpty()) {
