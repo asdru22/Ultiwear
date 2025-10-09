@@ -115,7 +115,7 @@ fun ManualTradeContent(
     context: Context
 ) {
     val wardrobeItems by wardrobeViewModel
-        .ownedWardrobeItems.collectAsState()
+        .tradeableWardrobeItems.collectAsState()
     val selectedGivenItems by manualTradeViewModel
         .selectedGivenItems.collectAsState()
     val receivedItems by manualTradeViewModel

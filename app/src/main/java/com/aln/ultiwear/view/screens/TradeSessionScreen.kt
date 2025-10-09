@@ -48,7 +48,7 @@ fun TradeSessionScreen(
     val coroutineScope = rememberCoroutineScope()
     val currentUserId = Firebase.auth.currentUser?.uid
 
-    val wardrobeItems by wardrobeViewModel.ownedWardrobeItems.collectAsState()
+    val wardrobeItems by wardrobeViewModel.tradeableWardrobeItems.collectAsState()
     var pendingTrades by remember {
         mutableStateOf<List<Map<String, Any>>>(emptyList())
     }

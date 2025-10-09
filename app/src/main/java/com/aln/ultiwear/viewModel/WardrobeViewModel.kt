@@ -31,6 +31,9 @@ class WardrobeViewModel : ViewModel() {
     private val _ownedWardrobeItems = MutableStateFlow<List<WardrobeItem>>(emptyList())
     val ownedWardrobeItems: StateFlow<List<WardrobeItem>> = _ownedWardrobeItems.asStateFlow()
 
+    private val _tradeableWardrobeItems = MutableStateFlow<List<WardrobeItem>>(emptyList())
+    val tradeableWardrobeItems: StateFlow<List<WardrobeItem>> = _tradeableWardrobeItems.asStateFlow()
+
     private val _selectedItem = MutableStateFlow<WardrobeItem?>(null)
     val selectedItem: StateFlow<WardrobeItem?> = _selectedItem.asStateFlow()
 
@@ -52,6 +55,7 @@ class WardrobeViewModel : ViewModel() {
             listenToWardrobeItems(currentUserId) { items ->
                 _wardrobeItems.value = items
                 _ownedWardrobeItems.value = items.filter { it.owned }
+                _tradeableWardrobeItems.value = items.filter { it.tradeable }
             }
         }
     }
