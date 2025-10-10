@@ -7,5 +7,6 @@ data class Trade(
     val userAItems: List<String> = emptyList(),
     val userBItems: List<String> = emptyList(),
     val photoUrl: String? = null,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val tournamentName: String? = null
 )

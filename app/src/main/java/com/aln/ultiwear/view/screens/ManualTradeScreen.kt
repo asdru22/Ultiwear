@@ -1,7 +1,9 @@
 package com.aln.ultiwear.view.screens
 
 import android.content.Context
+import android.location.Location
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -9,6 +11,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,6 +38,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,6 +50,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.aln.ultiwear.R
@@ -53,13 +58,16 @@ import com.aln.ultiwear.data.createImageUri
 import com.aln.ultiwear.model.WardrobeItem
 import com.aln.ultiwear.view.dialogs.AddWardrobeItemDialog
 import com.aln.ultiwear.view.shared.FrontImageSelectableCard
+import com.aln.ultiwear.viewModel.EventViewModel
 import com.aln.ultiwear.viewModel.ManualTradeViewModel
 import com.aln.ultiwear.viewModel.WardrobeViewModel
+import com.google.android.gms.location.LocationServices
 
 @Composable
 fun ManualTradeScreen(
     manualTradeViewModel: ManualTradeViewModel,
-    wardrobeViewModel: WardrobeViewModel
+    wardrobeViewModel: WardrobeViewModel,
+    eventViewModel: EventViewModel
 ) {
 
 
@@ -84,6 +92,7 @@ fun ManualTradeScreen(
         ManualTradeContent(
             wardrobeViewModel = wardrobeViewModel,
             manualTradeViewModel = manualTradeViewModel,
+            eventViewModel = eventViewModel,
             context = context
         )
     }
@@ -112,6 +121,7 @@ fun ManualTradeScreen(
 fun ManualTradeContent(
     wardrobeViewModel: WardrobeViewModel,
     manualTradeViewModel: ManualTradeViewModel,
+    eventViewModel: EventViewModel,
     context: Context
 ) {
     val wardrobeItems by wardrobeViewModel
@@ -121,6 +131,53 @@ fun ManualTradeContent(
     val receivedItems by manualTradeViewModel
         .receivedItems.collectAsState()
     var photoCaptureUri by remember { mutableStateOf<Uri?>(null) }
+
+    val fusedLocationClient = remember {
+        LocationServices.getFusedLocationProviderClient(context)
+    }
+    var currentLocation by remember { mutableStateOf<Location?>(null) }
+
+    LaunchedEffect(Unit) {
+        try {
+            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                if (location != null) {
+                    currentLocation = location
+                }
+            }
+        } catch (e: SecurityException) {
+            Log.e("ManualTradeScreen", "Location permission missing: ${e.message}")
+        }
+    }
+
+    val nearestTournaments = remember(
+        currentLocation,
+        eventViewModel.events
+    ) {
+        // if current location is not null (loc permission was granted)
+        currentLocation?.let { loc ->
+            eventViewModel.events
+                // remove any events that don't have latitude or longitue
+                .filter { it.lat != null && it.lng != null }
+                .map { t ->
+                    // because the android API uses a FloatArray to store the distance
+                    val distance = FloatArray(1)
+                    Location.distanceBetween(
+                        // current location
+                        loc.latitude, loc.longitude,
+                        // tournament location
+                        t.lat!!.toDouble(), t.lng!!.toDouble(),
+                        // save it in distance
+                        distance
+                    )
+                    // create a Pair<Tournament, Float>
+                    t to distance[0] // meters
+                }
+                // sort by distance (second value in Pair)
+                .sortedBy { it.second }
+                // show top 3
+                .take(3)
+        } ?: emptyList()
+    }
 
     val photoLauncher =
         rememberLauncherForActivityResult(
@@ -227,6 +284,60 @@ fun ManualTradeContent(
             )
 
         }
+
+        // select nearest tournament
+        if (nearestTournaments.isNotEmpty()) {
+            item {
+                Text(
+                    text = "Select Tournament:",
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+
+            items(nearestTournaments) { (tournament, distance) ->
+                val isSelected =
+                    manualTradeViewModel.selectedTournamentName
+                        .collectAsState().value == tournament.name
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .clickable {
+                            manualTradeViewModel.setSelectedTournament(tournament.name)
+                        },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isSelected)
+                            MaterialTheme.colorScheme.primaryContainer
+                        else
+                            MaterialTheme.colorScheme.surface
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .padding(12.dp)
+                    ) {
+                        Text(
+                            tournament.name,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isSelected)
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            else
+                                MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "${"%.1f".format(distance / 1000)} km away",
+                            color = if (isSelected)
+                                MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                            else
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+
 
         // finalize trade
         item {

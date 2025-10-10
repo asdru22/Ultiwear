@@ -23,6 +23,7 @@ materialIconsCore = "1.7.8"
 retrofit = "3.0.0"
 androidCore = "3.3.0"
 core = "3.5.3"
+playServicesLocation = "21.3.0"
 
 [libraries]
 
@@ -56,6 +57,7 @@ androidx-compose-material-icons-core = { group = "androidx.compose.material", na
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 android-core = { group = "com.google.zxing", name = "android-core", version.ref = "androidCore" }
 core = { group = "com.google.zxing", name = "core", version.ref = "core" }
+play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -11,11 +11,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -33,9 +35,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
+import com.aln.ultiwear.R
 import com.aln.ultiwear.model.Trade
 import com.aln.ultiwear.viewModel.TradesViewModel
 import com.aln.ultiwear.viewModel.WardrobeViewModel
@@ -121,10 +126,40 @@ fun TradeItem(trade: Trade, wardrobeViewModel: WardrobeViewModel) {
         Column(modifier = Modifier.padding(12.dp)) {
             val currentUserId = Firebase.auth.currentUser?.uid
 
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+            // format date
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             val dateString = dateFormat.format(Date(trade.timestamp))
-            Text("$dateString:", style = MaterialTheme.typography.bodyMedium)
 
+            // show date and tournament name
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.date),
+                    contentDescription = "Trade date",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = dateString,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Icon(
+                    imageVector = Icons.Default.LocationOn,
+                    contentDescription = "Tournament location",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = trade.tournamentName ?: "unknown",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            // trade photo if available
             trade.photoUrl?.let { url ->
                 Spacer(modifier = Modifier.height(8.dp))
                 AsyncImage(
@@ -140,46 +175,54 @@ fun TradeItem(trade: Trade, wardrobeViewModel: WardrobeViewModel) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Text("Your Sent Items:", style = MaterialTheme.typography.bodySmall)
-            Row {
-                val yourItems = if (currentUserId == trade.userAId) trade.userAItems else trade.userBItems
-                yourItems.forEach { itemId ->
-                    val frontUrl = wardrobeViewModel.getFrontImage(itemId)
-                    frontUrl?.let { url ->
-                        AsyncImage(
-                            model = url,
-                            contentDescription = "Sent Item",
-                            modifier = Modifier
-                                .size(64.dp)
-                                .padding(end = 4.dp)
-                                .clip(RoundedCornerShape(8.dp)),
-                            contentScale = ContentScale.Crop
-                        )
+            // determine sent and received items based on current user
+            val yourItems =
+                if (currentUserId == trade.userAId) trade.userAItems else trade.userBItems
+            val receivedItems =
+                if (currentUserId == trade.userAId) trade.userBItems else trade.userAItems
+
+            // only show if not empty
+            if (yourItems.isNotEmpty()) {
+                Text("Gave:", style = MaterialTheme.typography.bodySmall)
+                Row {
+                    yourItems.forEach { itemId ->
+                        val frontUrl = wardrobeViewModel.getFrontImage(itemId)
+                        frontUrl?.let { url ->
+                            AsyncImage(
+                                model = url,
+                                contentDescription = "Sent Item",
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .padding(end = 4.dp)
+                                    .clip(RoundedCornerShape(8.dp)),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
                     }
                 }
+                Spacer(modifier = Modifier.height(8.dp))
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text("Received Items:", style = MaterialTheme.typography.bodySmall)
-            Row {
-                val receivedItems = if (currentUserId == trade.userAId) trade.userBItems else trade.userAItems
-                receivedItems.forEach { itemId ->
-                    val frontUrl = wardrobeViewModel.getFrontImage(itemId)
-                    frontUrl?.let { url ->
-                        AsyncImage(
-                            model = url,
-                            contentDescription = "Received Item",
-                            modifier = Modifier
-                                .size(64.dp)
-                                .padding(end = 4.dp)
-                                .clip(RoundedCornerShape(8.dp)),
-                            contentScale = ContentScale.Crop
-                        )
+            // only show if not empty
+            if (receivedItems.isNotEmpty()) {
+                Text("Received:", style = MaterialTheme.typography.bodySmall)
+                Row {
+                    receivedItems.forEach { itemId ->
+                        val frontUrl = wardrobeViewModel.getFrontImage(itemId)
+                        frontUrl?.let { url ->
+                            AsyncImage(
+                                model = url,
+                                contentDescription = "Received Item",
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .padding(end = 4.dp)
+                                    .clip(RoundedCornerShape(8.dp)),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
                     }
                 }
             }
         }
     }
 }
-

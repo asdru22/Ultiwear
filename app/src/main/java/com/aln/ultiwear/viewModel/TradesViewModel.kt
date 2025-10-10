@@ -53,7 +53,8 @@ class TradesViewModel : ViewModel() {
                             userBItems = (doc.get("userBItems") as? List<*>)
                                 ?.mapNotNull { it as? String } ?: emptyList(),
                             photoUrl = doc.getString("photoUrl"),
-                            timestamp = doc.getLong("timestamp") ?: System.currentTimeMillis()
+                            timestamp = doc.getLong("timestamp") ?: System.currentTimeMillis(),
+                            tournamentName = doc.getString("tournamentName")?: "unknown"
                         )
                     } catch (e: Exception) {
                         Log.e("TradesViewModel", "Failed to load trades", e)

@@ -274,7 +274,8 @@ class TradeSessionViewModel(
                     userBId = userBId,
                     userAItems = userAItems,
                     userBItems = userBItems,
-                    photoUri = null
+                    photoUri = null,
+                    tournamentName = null
                 )
 
                 // mark session as uploaded

@@ -1,5 +1,6 @@
 package com.aln.ultiwear
 
+import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.Manifest.permission.CAMERA
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -36,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -80,27 +82,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val locationPermission = ACCESS_FINE_LOCATION
+        ActivityCompat.requestPermissions(this, arrayOf(locationPermission), 0)
 
-        // launcher to request permission
-        val requestCameraPermission =
-            registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-                if (!granted) {
-                    Toast.makeText(
-                        this,
-                        "App will behave unexpectedly without camera permission",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-
-        // check and request on startup
-        if (ContextCompat.checkSelfPermission(
-                this,
-                CAMERA
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            requestCameraPermission.launch(CAMERA)
-        }
+        permissionRequests()
 
         setContent {
             UltiwearTheme {
@@ -136,6 +121,43 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
+        }
+    }
+
+    private fun permissionRequests(){
+        val locationPermissionLauncher =
+            registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+                if (!granted) {
+                    Toast.makeText(
+                        this,
+                        "App may not show nearby tournaments without location permission",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+
+        val cameraPermissionLauncher =
+            registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+                if (!granted) {
+                    Toast.makeText(
+                        this,
+                        "App will behave unexpectedly without camera permission",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+
+        // --- Request permissions if not already granted ---
+        if (ContextCompat.checkSelfPermission(this, ACCESS_FINE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            locationPermissionLauncher.launch(ACCESS_FINE_LOCATION)
+        }
+
+        if (ContextCompat.checkSelfPermission(this, CAMERA)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            cameraPermissionLauncher.launch(CAMERA)
         }
     }
 

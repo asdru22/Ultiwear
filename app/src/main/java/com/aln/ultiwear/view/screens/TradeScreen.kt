@@ -100,7 +100,8 @@ fun TradeScreen(
 
             1 -> ManualTradeScreen(
                 wardrobeViewModel = wardrobeViewModel,
-                manualTradeViewModel = manualTradeViewModel
+                manualTradeViewModel = manualTradeViewModel,
+                eventViewModel = eventViewModel
             )
 
             2 -> QuickTradeScreen(

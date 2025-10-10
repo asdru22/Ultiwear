@@ -106,6 +106,9 @@ dependencies {
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
 
+    // location
+    implementation(libs.play.services.location)
+
     // barcode scanning
     // CameraX
     implementation("androidx.camera:camera-core:1.5.0")

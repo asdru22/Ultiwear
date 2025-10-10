@@ -29,6 +29,8 @@ class ManualTradeViewModel(
 ) : ViewModel() {
 
     private val tag = "ManualTradeViewModel"
+
+    val selectedTournamentName = MutableStateFlow<String?>(null)
     val selectedGivenItems = MutableStateFlow<List<WardrobeItem>>(emptyList())
     val receivedItems = MutableStateFlow<List<WardrobeItem>>(emptyList())
     val showAddReceivedDialog = MutableStateFlow(false)
@@ -39,6 +41,10 @@ class ManualTradeViewModel(
 
     fun setTradePhoto(uri: Uri?) {
         tradePhotoUri.value = uri
+    }
+
+    fun setSelectedTournament(name: String) {
+        selectedTournamentName.value = name
     }
 
     fun toggleGivenItem(item: WardrobeItem) {
@@ -56,7 +62,7 @@ class ManualTradeViewModel(
         front: Uri, back: Uri?, condition: Condition,
         size: Size, post: Boolean, tradeable: Boolean
     ) {
-        // Construct WardrobeItem
+        // make WardrobeItem
         val newItem = WardrobeItem(
             id = UUID.randomUUID().toString(),
             frontImageUrl = front.toString(),
@@ -104,7 +110,8 @@ class ManualTradeViewModel(
                     userBId = userBId,
                     userAItems = givenItemIds,
                     userBItems = newItemIds,
-                    photoUri = tradePhotoUri.value
+                    photoUri = tradePhotoUri.value,
+                    tournamentName = selectedTournamentName.value
                 )
 
                 resetUI()
@@ -137,6 +144,7 @@ class ManualTradeViewModel(
         receivedItems.value = emptyList()
         tradePhotoUri.value = null
         showAddReceivedDialog.value = false
+        selectedTournamentName.value = null
     }
 
     suspend fun uploadTrade(
@@ -144,7 +152,8 @@ class ManualTradeViewModel(
         userBId: String,
         userAItems: List<String>,
         userBItems: List<String>,
-        photoUri: Uri?
+        photoUri: Uri?,
+        tournamentName: String?
     ) {
         val firestore = FirebaseFirestore.getInstance()
 
@@ -159,7 +168,8 @@ class ManualTradeViewModel(
             userBId = userBId,
             userAItems = userAItems,
             userBItems = userBItems,
-            photoUrl = photoUrl
+            photoUrl = photoUrl,
+            tournamentName = tournamentName
         )
 
         firestore.collection("trades").document(trade.id).set(trade).await()
