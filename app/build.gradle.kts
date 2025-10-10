@@ -111,14 +111,14 @@ dependencies {
 
     // barcode scanning
     // CameraX
-    implementation("androidx.camera:camera-core:1.5.0")
-    implementation("androidx.camera:camera-camera2:1.5.0")
-    implementation("androidx.camera:camera-lifecycle:1.5.0")
-    implementation("androidx.camera:camera-view:1.5.0")
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
     // ML Kit Barcode Scanning
-    implementation("com.google.mlkit:barcode-scanning:17.3.0")
+    implementation(libs.barcode.scanning)
 
-    implementation("com.google.guava:guava:33.5.0-android")
+    implementation(libs.guava)
 
     // other
     implementation(libs.coil.compose)

@@ -3,6 +3,7 @@ package com.aln.ultiwear
 import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.Manifest.permission.CAMERA
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -10,6 +11,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -79,6 +81,7 @@ class MainActivity : ComponentActivity() {
     private val browseViewModel: BrowseViewModel by viewModels()
     private val eventViewModel: EventViewModel by viewModels()
 
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -124,7 +127,9 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun permissionRequests(){
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
+    private fun permissionRequests() {
+
         val locationPermissionLauncher =
             registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
                 if (!granted) {
@@ -147,6 +152,17 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
+        val notificationPermissionLauncher =
+            registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+                if (!granted) {
+                    Toast.makeText(
+                        this,
+                        "App will not show notifications without notification permission",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+
         // --- Request permissions if not already granted ---
         if (ContextCompat.checkSelfPermission(this, ACCESS_FINE_LOCATION)
             != PackageManager.PERMISSION_GRANTED
@@ -159,6 +175,16 @@ class MainActivity : ComponentActivity() {
         ) {
             cameraPermissionLauncher.launch(CAMERA)
         }
+
+
+        if (ContextCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
+
     }
 
     @Composable

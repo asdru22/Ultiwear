@@ -1,7 +1,10 @@
 [versions]
 agp = "8.13.0"
+barcodeScanning = "17.3.0"
+cameraView = "1.5.1"
 coilCompose = "2.7.0"
 converterGson = "3.0.0"
+guava = "33.5.0-android"
 kotlin = "2.2.20"
 coreKtx = "1.17.0"
 junit = "4.13.2"
@@ -9,27 +12,31 @@ junitVersion = "1.3.0"
 espressoCore = "3.7.0"
 lifecycleRuntimeKtx = "2.9.4"
 activityCompose = "1.11.0"
-composeBom = "2025.09.01"
+composeBom = "2025.10.00"
 
 credentialsPlayServicesAuth = "1.5.0"
 googleid = "1.1.1"
 
-firebaseBom = "34.3.0"
-gmsGoogleServices = "4.4.3"
+firebaseBom = "34.4.0"
+gmsGoogleServices = "4.4.4"
 firebaseStorage = "22.0.1"
-firebaseFirestore = "26.0.1"
+firebaseFirestore = "26.0.2"
 lifecycleViewmodelCompose = "2.9.4"
 materialIconsCore = "1.7.8"
 retrofit = "3.0.0"
-androidCore = "3.3.0"
 core = "3.5.3"
 playServicesLocation = "21.3.0"
 
 [libraries]
 
+androidx-camera-camera2 = { module = "androidx.camera:camera-camera2", version.ref = "cameraView" }
+androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "cameraView" }
+androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", version.ref = "cameraView" }
+androidx-camera-view = { module = "androidx.camera:camera-view", version.ref = "cameraView" }
 androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentialsPlayServicesAuth" }
 androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentialsPlayServicesAuth" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
+barcode-scanning = { module = "com.google.mlkit:barcode-scanning", version.ref = "barcodeScanning" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "converterGson" }
 googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
@@ -38,6 +45,7 @@ firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "fir
 firebase-auth = { module = "com.google.firebase:firebase-auth" }
 
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+guava = { module = "com.google.guava:guava", version.ref = "guava" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
@@ -55,7 +63,6 @@ firebase-storage = { group = "com.google.firebase", name = "firebase-storage", v
 firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore", version.ref = "firebaseFirestore" }
 androidx-compose-material-icons-core = { group = "androidx.compose.material", name = "material-icons-core", version.ref = "materialIconsCore" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
-android-core = { group = "com.google.zxing", name = "android-core", version.ref = "androidCore" }
 core = { group = "com.google.zxing", name = "core", version.ref = "core" }
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
 

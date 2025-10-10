@@ -151,10 +151,10 @@ fun TradeSessionScreen(
                         selectedItemIds.forEach { itemId ->
                             try {
                                 viewModel.sendItemToOtherUser(sessionId, itemId)
-                            } catch (e: Exception) {
+                            } catch (_: Exception) {
                                 Toast.makeText(
                                     context,
-                                    "Error: ${e.message}",
+                                    "Error sending item",
                                     Toast.LENGTH_LONG
                                 ).show()
                             }

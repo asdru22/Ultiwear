@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aln.ultiwear.model.TradeMatch
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -18,7 +19,7 @@ class TradeMatchesViewModel(
 ) : ViewModel() {
 
     private val tag = "TradeMatchesViewModel"
-    private val firestore = FirebaseFirestore.getInstance()
+    val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
     private val _matches = mutableStateOf<List<TradeMatch>>(emptyList())
