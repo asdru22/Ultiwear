@@ -4,6 +4,7 @@ barcodeScanning = "17.3.0"
 cameraView = "1.5.1"
 coilCompose = "2.7.0"
 converterGson = "3.0.0"
+datastorePreferences = "1.1.7"
 guava = "33.5.0-android"
 kotlin = "2.2.20"
 coreKtx = "1.17.0"
@@ -26,6 +27,7 @@ materialIconsCore = "1.7.8"
 retrofit = "3.0.0"
 core = "3.5.3"
 playServicesLocation = "21.3.0"
+workRuntimeKtx = "2.10.5"
 
 [libraries]
 
@@ -35,7 +37,9 @@ androidx-camera-lifecycle = { module = "androidx.camera:camera-lifecycle", versi
 androidx-camera-view = { module = "androidx.camera:camera-view", version.ref = "cameraView" }
 androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentialsPlayServicesAuth" }
 androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentialsPlayServicesAuth" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
+androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntimeKtx" }
 barcode-scanning = { module = "com.google.mlkit:barcode-scanning", version.ref = "barcodeScanning" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
 converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "converterGson" }

@@ -31,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.aln.ultiwear.R
@@ -178,9 +179,12 @@ fun TournamentCard(
                 }
             }
 
+            val context = LocalContext.current
             Checkbox(
                 checked = attending,
-                onCheckedChange = { viewModel.setAttendance(tournament.id, it) }
+                onCheckedChange = { viewModel.setAttendance(
+                    context = context,
+                    tournament= tournament, it) }
             )
         }
     }

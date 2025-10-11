@@ -1,12 +1,15 @@
 package com.aln.ultiwear.viewModel
 
+import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aln.ultiwear.data.ApiClient
+import com.aln.ultiwear.data.TournamentPrefs
 import com.aln.ultiwear.model.tournament.TournamentUi
+import com.aln.ultiwear.notifications.NotificationScheduler
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
@@ -81,23 +84,40 @@ class EventViewModel : ViewModel() {
             }
     }
 
-    fun setAttendance(tournamentId: Int, attending: Boolean) {
+    fun setAttendance(context: Context, tournament: TournamentUi, attending: Boolean) {
         val uid = auth.currentUser?.uid ?: return
-        attendances[tournamentId] = attending
+        attendances[tournament.id] = attending
 
         val docRef = firestore.collection("user_attendance")
             .document(uid)
             .collection("tournaments")
-            .document(tournamentId.toString())
+            .document(tournament.id.toString())
 
         val data = mapOf(
-            "tournamentId" to tournamentId, // tournamentId saved for ease of access
+            "tournamentId" to tournament.id, // tournamentId saved for ease of access
             "attending" to attending,
             "timestamp" to System.currentTimeMillis()
         )
 
+        selectTournament(context, tournament)
+
         docRef.set(data)
-            .addOnSuccessListener { Log.i(tag, "Attendance saved for $tournamentId") }
+            .addOnSuccessListener { Log.i(tag, "Attendance saved for $tournament") }
             .addOnFailureListener { Log.e(tag, "Failed to save attendance: ${it.message}") }
+    }
+
+    fun selectTournament(context: Context, tournament: TournamentUi) {
+        viewModelScope.launch {
+            val prefs = TournamentPrefs(context)
+            prefs.saveTournament(tournament.name, tournament.startDate ?: return@launch)
+
+            // get the list of tournaments the user is attending
+            val attendingTournaments = events.filter { attendances[it.id] == true }
+
+            // schedule reminder
+            NotificationScheduler.scheduleDailyReminder(context, attendingTournaments.first())
+
+            Log.i(tag, "Saved tournament ${tournament.name} and scheduled reminder")
+        }
     }
 }

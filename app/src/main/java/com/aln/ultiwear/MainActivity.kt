@@ -2,6 +2,9 @@ package com.aln.ultiwear
 
 import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.Manifest.permission.CAMERA
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -86,7 +89,22 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val locationPermission = ACCESS_FINE_LOCATION
-        ActivityCompat.requestPermissions(this, arrayOf(locationPermission), 0)
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(locationPermission),
+            0
+        )
+
+        val channel = NotificationChannel(
+            "ultiwear_channel",
+            "Ultiwear Reminders",
+            NotificationManager.IMPORTANCE_DEFAULT
+        )
+        // gets the system service that handles notifications
+        val manager = getSystemService(NOTIFICATION_SERVICE)
+                as NotificationManager
+        // create the channel the app will use for notifications
+        manager.createNotificationChannel(channel)
 
         permissionRequests()
 
@@ -176,7 +194,6 @@ class MainActivity : ComponentActivity() {
             cameraPermissionLauncher.launch(CAMERA)
         }
 
-
         if (ContextCompat.checkSelfPermission(
                 this,
                 android.Manifest.permission.POST_NOTIFICATIONS
@@ -263,21 +280,20 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
-
-@Composable
-fun NoInternetScreen(onRetry: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(stringResource(R.string.no_internet))
-        Spacer(modifier = Modifier.height(12.dp))
-        Button(onClick = onRetry) {
-            Text(stringResource(R.string.try_again))
+    @Composable
+    fun NoInternetScreen(onRetry: () -> Unit) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(stringResource(R.string.no_internet))
+            Spacer(modifier = Modifier.height(12.dp))
+            Button(onClick = onRetry) {
+                Text(stringResource(R.string.try_again))
+            }
         }
     }
 }
