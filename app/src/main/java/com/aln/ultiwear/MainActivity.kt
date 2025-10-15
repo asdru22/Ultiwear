@@ -2,13 +2,11 @@ package com.aln.ultiwear
 
 import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.Manifest.permission.CAMERA
+import android.Manifest.permission.POST_NOTIFICATIONS
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.content.Context
-import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -42,8 +40,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.aln.ultiwear.data.GoogleAuthClient
@@ -88,25 +84,20 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val locationPermission = ACCESS_FINE_LOCATION
-        ActivityCompat.requestPermissions(
-            this,
-            arrayOf(locationPermission),
-            0
-        )
 
-        val channel = NotificationChannel(
-            "ultiwear_channel",
-            "Ultiwear Reminders",
-            NotificationManager.IMPORTANCE_DEFAULT
-        )
+        requestPermissionsOnStartup()
+
         // gets the system service that handles notifications
         val manager = getSystemService(NOTIFICATION_SERVICE)
                 as NotificationManager
         // create the channel the app will use for notifications
-        manager.createNotificationChannel(channel)
-
-        permissionRequests()
+        manager.createNotificationChannel(
+            NotificationChannel(
+                "ultiwear_channel",
+                "Tournament Days",
+                NotificationManager.IMPORTANCE_DEFAULT
+            )
+        )
 
         setContent {
             UltiwearTheme {
@@ -145,64 +136,35 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // start requesting permissions
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-    private fun permissionRequests() {
-
-        val locationPermissionLauncher =
-            registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-                if (!granted) {
-                    Toast.makeText(
-                        this,
-                        "App may not show nearby tournaments without location permission",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-
-        val cameraPermissionLauncher =
-            registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-                if (!granted) {
-                    Toast.makeText(
-                        this,
-                        "App will behave unexpectedly without camera permission",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-
-        val notificationPermissionLauncher =
-            registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-                if (!granted) {
-                    Toast.makeText(
-                        this,
-                        "App will not show notifications without notification permission",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-
-        // --- Request permissions if not already granted ---
-        if (ContextCompat.checkSelfPermission(this, ACCESS_FINE_LOCATION)
-            != PackageManager.PERMISSION_GRANTED
-        ) {
-            locationPermissionLauncher.launch(ACCESS_FINE_LOCATION)
-        }
-
-        if (ContextCompat.checkSelfPermission(this, CAMERA)
-            != PackageManager.PERMISSION_GRANTED
-        ) {
-            cameraPermissionLauncher.launch(CAMERA)
-        }
-
-        if (ContextCompat.checkSelfPermission(
-                this,
-                android.Manifest.permission.POST_NOTIFICATIONS
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-        }
-
+    private fun requestPermissionsOnStartup() {
+        notificationPermissionLauncher.launch(POST_NOTIFICATIONS)
     }
+
+    // called after notification
+    private fun requestCameraPermission() {
+        cameraPermissionLauncher.launch(CAMERA)
+    }
+
+    // called after camera permission
+    private fun requestLocationPermission() {
+        locationPermissionLauncher.launch(ACCESS_FINE_LOCATION)
+    }
+
+    // make the launchers  chain
+    private val notificationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { _ ->
+            requestCameraPermission() // next
+        }
+
+    private val cameraPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { _ ->
+            requestLocationPermission() // next
+        }
+
+    private val locationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) {}
 
     @Composable
     fun AppWithBottomBar(
@@ -280,6 +242,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
     @Composable
     fun NoInternetScreen(onRetry: () -> Unit) {
         Column(
