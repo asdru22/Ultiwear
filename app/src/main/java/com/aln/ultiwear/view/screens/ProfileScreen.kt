@@ -1,6 +1,7 @@
 package com.aln.ultiwear.view.screens
 
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -22,12 +23,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import coil.compose.AsyncImage
 import com.aln.ultiwear.R
+import com.aln.ultiwear.notifications.TournamentReminderWorker
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.auth
@@ -72,6 +77,13 @@ fun ProfileScreen(
             UserInfo(user)
         }
 
+        Spacer(Modifier.height(200.dp))
+
+        val context = LocalContext.current
+        Button(
+            onClick = { testNotificationNow(context) },
+            content = { Text("Test Notification") })
+
     }
 }
 
@@ -102,4 +114,9 @@ fun UserInfo(user: FirebaseUser) {
             color = MaterialTheme.colorScheme.onBackground
         )
     }
+}
+
+private fun testNotificationNow(context: Context) {
+    val workRequest = OneTimeWorkRequestBuilder<TournamentReminderWorker>().build()
+    WorkManager.getInstance(context).enqueue(workRequest)
 }

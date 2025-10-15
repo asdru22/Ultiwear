@@ -7,7 +7,6 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aln.ultiwear.data.ApiClient
-import com.aln.ultiwear.data.TournamentPrefs
 import com.aln.ultiwear.model.tournament.TournamentUi
 import com.aln.ultiwear.notifications.NotificationScheduler
 import com.google.firebase.auth.FirebaseAuth
@@ -99,25 +98,11 @@ class EventViewModel : ViewModel() {
             "timestamp" to System.currentTimeMillis()
         )
 
-        selectTournament(context, tournament)
+        NotificationScheduler.scheduleDailyReminder(context)
+        Log.i(tag, "Updated schedule")
 
         docRef.set(data)
             .addOnSuccessListener { Log.i(tag, "Attendance saved for $tournament") }
             .addOnFailureListener { Log.e(tag, "Failed to save attendance: ${it.message}") }
-    }
-
-    fun selectTournament(context: Context, tournament: TournamentUi) {
-        viewModelScope.launch {
-            val prefs = TournamentPrefs(context)
-            prefs.saveTournament(tournament.name, tournament.startDate ?: return@launch)
-
-            // get the list of tournaments the user is attending
-            val attendingTournaments = events.filter { attendances[it.id] == true }
-
-            // schedule reminder
-            NotificationScheduler.scheduleDailyReminder(context, attendingTournaments.first())
-
-            Log.i(tag, "Saved tournament ${tournament.name} and scheduled reminder")
-        }
     }
 }
