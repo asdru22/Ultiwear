@@ -1,0 +1,12 @@
+A project report, which is a document that describes the application produced,
+focusing on the workflow and the design choices. In particular, the Report
+should be named SURNAME1 SURNAME2.pdf and contain:
+• The name, surname, email, and matriculation number of each component
+of the group.
+• Overview of the application with screenshots.
+• Implementation details on how you chose to implement the functionalities.
+A good report is probably between 10 and 15 pages. Less than 5 pages
+are probably too few, and more than 15 are probably too many. The
+quality of the report WILL be part of the evaluation. A good report
+also contains about 70% of implementation details and choices
+and only the remaining 30% of screenshots, overview. . .
