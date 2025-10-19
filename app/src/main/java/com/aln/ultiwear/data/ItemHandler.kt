@@ -192,11 +192,14 @@ private suspend fun deleteAssociatedData(item: WardrobeItem?){
 
 suspend fun makePost(item: WardrobeItem?) = try {
     val firestore: FirebaseFirestore = Firebase.firestore
+    val ownerId = Firebase.auth.currentUser?.uid ?: "unknown"
 
     val postId = firestore.collection("posts").document().id
     val newPost = Post(
         wardrobeUid = item?.id ?: "none",
-        likes = 0
+        likes = 0,
+        notification = false,
+        ownerId = ownerId
     )
 
     firestore.collection("posts").document(postId)

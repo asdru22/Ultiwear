@@ -1,4 +1,4 @@
-package com.aln.ultiwear.data
+package com.aln.ultiwear.notifications
 
 import android.Manifest.permission.POST_NOTIFICATIONS
 import android.content.Context
@@ -10,6 +10,7 @@ import androidx.core.content.edit
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.aln.ultiwear.R
+import com.aln.ultiwear.data.ApiClient
 import com.aln.ultiwear.model.tournament.TournamentUi
 import java.time.ZonedDateTime
 

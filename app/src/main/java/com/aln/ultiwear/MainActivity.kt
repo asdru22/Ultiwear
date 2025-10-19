@@ -46,8 +46,9 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.aln.ultiwear.data.GoogleAuthClient
-import com.aln.ultiwear.data.TournamentCheckWorker
+import com.aln.ultiwear.notifications.TournamentCheckWorker
 import com.aln.ultiwear.model.TabItem
+import com.aln.ultiwear.notifications.PostLikeCheckWorker
 import com.aln.ultiwear.ui.theme.LocalBottomBarBackground
 import com.aln.ultiwear.ui.theme.UltiwearTheme
 import com.aln.ultiwear.view.screens.BrowseScreen
@@ -104,17 +105,28 @@ class MainActivity : ComponentActivity() {
             )
         )
 
-        val workRequest = PeriodicWorkRequestBuilder<TournamentCheckWorker>(
+        val tournamentCheckRequest = PeriodicWorkRequestBuilder<TournamentCheckWorker>(
             1, TimeUnit.HOURS
         ).build()
 
-        WorkManager.getInstance(this)
-            .enqueueUniquePeriodicWork(
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
                 "tournament_check",
-                ExistingPeriodicWorkPolicy.KEEP, // don’t start a new one if already running
-                workRequest
+                // don't start a new one if it's already running
+                ExistingPeriodicWorkPolicy.KEEP,
+            tournamentCheckRequest
             )
 
+        val postLikeCheckRequest =
+            PeriodicWorkRequestBuilder<PostLikeCheckWorker>(
+                1,
+                TimeUnit.HOURS
+            ).build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "post_like_check",
+            ExistingPeriodicWorkPolicy.KEEP,
+            postLikeCheckRequest
+        )
 
         setContent {
             UltiwearTheme {

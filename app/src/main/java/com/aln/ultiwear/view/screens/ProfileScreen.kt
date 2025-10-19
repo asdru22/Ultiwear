@@ -32,6 +32,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import coil.compose.AsyncImage
 import com.aln.ultiwear.R
+import com.aln.ultiwear.notifications.PostLikeCheckWorker
 import com.aln.ultiwear.notifications.TournamentReminderWorker
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseUser
@@ -82,8 +83,9 @@ fun ProfileScreen(
         val context = LocalContext.current
         Button(
             onClick = { testNotificationNow(context) },
-            content = { Text("Test Notification") })
-
+            content = { Text("Test Notification") }
+        )
+        CheckLikesButton()
     }
 }
 
@@ -115,6 +117,21 @@ fun UserInfo(user: FirebaseUser) {
         )
     }
 }
+
+@Composable
+fun CheckLikesButton(context: Context = LocalContext.current) {
+    Button(
+        onClick = {
+            // request that runs immediately
+            val workRequest = OneTimeWorkRequestBuilder<PostLikeCheckWorker>().build()
+
+            WorkManager.getInstance(context).enqueue(workRequest)
+        }
+    ) {
+        Text("Check Likes")
+    }
+}
+
 
 private fun testNotificationNow(context: Context) {
     val workRequest = OneTimeWorkRequestBuilder<TournamentReminderWorker>().build()
