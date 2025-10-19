@@ -4,27 +4,22 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import android.widget.Toast
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.aln.ultiwear.data.TradeHandler
 import com.aln.ultiwear.model.Condition
 import com.aln.ultiwear.model.Size
 import com.aln.ultiwear.model.WardrobeItem
-import kotlinx.coroutines.flow.MutableStateFlow
-import java.util.UUID
-import androidx.core.net.toUri
-import androidx.lifecycle.viewModelScope
-import com.aln.ultiwear.data.TradeHandler
-import com.aln.ultiwear.data.compressAndUpload
-import com.aln.ultiwear.model.Trade
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.util.UUID
 
 class ManualTradeViewModel(
     private val wardrobeViewModel: WardrobeViewModel,

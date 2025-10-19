@@ -23,7 +23,7 @@ class ItemHandler(
     private val firestore: FirebaseFirestore = Firebase.firestore,
     private val auth: FirebaseAuth = Firebase.auth
 ) {
-    private val tag = "HandleWardrobeItem"
+    private val tag = "ItemHandler"
 
     suspend fun uploadWardrobeItem(
         frontUri: Uri,

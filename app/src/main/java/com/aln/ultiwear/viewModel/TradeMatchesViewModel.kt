@@ -8,13 +8,9 @@ import androidx.lifecycle.viewModelScope
 import com.aln.ultiwear.data.TradeHandler
 import com.aln.ultiwear.model.TradeMatch
 import com.google.firebase.Firebase
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
-import com.google.firebase.firestore.FieldValue
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 
 class TradeMatchesViewModel(
     private val browseViewModel: BrowseViewModel,

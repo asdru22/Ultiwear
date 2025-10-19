@@ -58,6 +58,7 @@ class AuthHandler(
 
     private suspend fun handleSignIn(result: GetCredentialResponse): Boolean {
         val credential = result.credential
+        // check if the credential is a Google ID token
         if (credential !is CustomCredential ||
             credential.type != GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
         ) {
@@ -76,6 +77,7 @@ class AuthHandler(
         }
     }
 
+    // convert google credential to Firebase credential
     private fun getAuthCredential(credential: CustomCredential): AuthCredential? {
         return try {
             val tokenCredential = GoogleIdTokenCredential.createFrom(
@@ -99,6 +101,7 @@ class AuthHandler(
             .get()
             .await()
 
+        // if there is no collection for that user, register them
         if (userRef.isEmpty) {
             registerNewUser(user)
         } else {
@@ -106,6 +109,7 @@ class AuthHandler(
         }
     }
 
+    // update the Firebase collection with the new user data
     private suspend fun registerNewUser(user: FirebaseUser) {
         val newUserId = Firebase.auth.currentUser?.uid ?: "unknown"
         val newUser = User(id = newUserId, email = user.email ?: "")
@@ -117,6 +121,7 @@ class AuthHandler(
         Log.i(tag, "New user registered with ID: $newUserId")
     }
 
+    // prompt the user to choose a google account
     private suspend fun buildCredentialRequest(): GetCredentialResponse {
         val request = GetCredentialRequest.Builder()
             .addCredentialOption(
