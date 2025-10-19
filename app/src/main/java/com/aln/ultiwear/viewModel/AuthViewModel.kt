@@ -5,18 +5,18 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aln.ultiwear.data.GoogleAuthClient
+import com.aln.ultiwear.data.AuthHandler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class AuthViewModel(
-    private val googleAuthClient: GoogleAuthClient
+    private val authHandler: AuthHandler
 ) : ViewModel() {
 
     // mutable internal state
-    private val _isSignedIn = MutableStateFlow(googleAuthClient.isSignedIn())
+    private val _isSignedIn = MutableStateFlow(authHandler.isSignedIn())
     // read-only state exposed to the UI
     val isSignedIn: StateFlow<Boolean> = _isSignedIn.asStateFlow()
 
@@ -31,14 +31,14 @@ class AuthViewModel(
         // launches a coroutine in viewModelScope,
         // so it’s tied to the ViewModel lifecycle
         viewModelScope.launch {
-            val success = googleAuthClient.signIn()
+            val success = authHandler.signIn()
             if (success) _isSignedIn.value = true
         }
     }
 
     fun signOut() {
         viewModelScope.launch {
-            googleAuthClient.signOut()
+            authHandler.signOut()
             _isSignedIn.value = false
         }
     }

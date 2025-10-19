@@ -16,21 +16,20 @@ import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
 import com.google.firebase.Firebase
 import com.google.firebase.auth.AuthCredential
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
-import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.tasks.await
 import kotlin.coroutines.cancellation.CancellationException
 
-class GoogleAuthClient(
+class AuthHandler(
     private val context: Context,
 ) {
-    private val tag = "GoogleAuthClient"
+    private val tag = "AuthHandler"
     private val credentialManager = CredentialManager.create(context)
-    private val firebaseAuth = FirebaseAuth.getInstance()
-    private val firestore = FirebaseFirestore.getInstance()
+    private val firebaseAuth = Firebase.auth
+    private val firestore = Firebase.firestore
 
     fun isSignedIn(): Boolean {
         if (firebaseAuth.currentUser != null) {

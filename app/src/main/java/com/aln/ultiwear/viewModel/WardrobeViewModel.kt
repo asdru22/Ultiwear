@@ -4,11 +4,7 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aln.ultiwear.data.deleteWardrobeItem
-import com.aln.ultiwear.data.hideWardrobeItem
-import com.aln.ultiwear.data.listenToWardrobeItems
-import com.aln.ultiwear.data.makePost
-import com.aln.ultiwear.data.uploadWardrobeItem
+import com.aln.ultiwear.data.ItemHandler
 import com.aln.ultiwear.model.Condition
 import com.aln.ultiwear.model.Size
 import com.aln.ultiwear.model.WardrobeItem
@@ -21,7 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class WardrobeViewModel : ViewModel() {
+class WardrobeViewModel(val handler: ItemHandler = ItemHandler()) : ViewModel() {
 
     private val tag = "WardrobeViewModel"
 
@@ -52,7 +48,7 @@ class WardrobeViewModel : ViewModel() {
     init {
         val currentUserId = Firebase.auth.currentUser?.uid
         if (currentUserId != null) {
-            listenToWardrobeItems(currentUserId) { items ->
+            handler.listenToWardrobeItems(currentUserId) { items ->
                 _wardrobeItems.value = items
                 _ownedWardrobeItems.value = items.filter { it.owned }
                 _tradeableWardrobeItems.value = items.filter { it.tradeable }
@@ -87,7 +83,7 @@ class WardrobeViewModel : ViewModel() {
             _uploadSuccess.value = false
             try {
                 val item = withContext(Dispatchers.IO) {
-                    uploadWardrobeItem(frontUri, backUri, condition, size, post, tradeable)
+                    handler.uploadWardrobeItem(frontUri, backUri, condition, size, post, tradeable)
                 }
 
                 if (item == null) {
@@ -99,7 +95,7 @@ class WardrobeViewModel : ViewModel() {
 
                 if (post) {
                     try {
-                        withContext(Dispatchers.IO) { makePost(item) }
+                        withContext(Dispatchers.IO) { handler.makePost(item) }
                         Log.d(tag, "Post created for item ${item.id}")
                     } catch (e: Exception) {
                         Log.e(tag, "Failed to create post for ${item.id}", e)
@@ -124,7 +120,7 @@ class WardrobeViewModel : ViewModel() {
         tradeable: Boolean
     ): WardrobeItem? {
         return withContext(Dispatchers.IO) {
-            val item = uploadWardrobeItem(
+            val item = handler.uploadWardrobeItem(
                 frontUri,
                 backUri,
                 condition,
@@ -133,7 +129,7 @@ class WardrobeViewModel : ViewModel() {
             )
             if (item != null && post) {
                 try {
-                    makePost(item)
+                    handler.makePost(item)
                 } catch (e: Exception) {
                     Log.e(tag, "Failed to create post for ${item.id}", e)
                 }
@@ -150,7 +146,7 @@ class WardrobeViewModel : ViewModel() {
     fun deleteItem(id: String) {
         viewModelScope.launch {
             try {
-                deleteWardrobeItem(id)
+                handler.deleteWardrobeItem(id)
                 notifyItemsChanged()
             } catch (e: Exception) {
                 Log.e(tag, "Failed to delete item", e)
@@ -161,7 +157,7 @@ class WardrobeViewModel : ViewModel() {
     fun hideItem(id: String) {
         viewModelScope.launch {
             try {
-                hideWardrobeItem(id)
+                handler.hideWardrobeItem(id)
                 notifyItemsChanged()
             } catch (e: Exception) {
                 Log.e(tag, "Failed to hide item", e)

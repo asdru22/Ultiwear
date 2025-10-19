@@ -45,7 +45,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import com.aln.ultiwear.data.GoogleAuthClient
+import com.aln.ultiwear.data.AuthHandler
 import com.aln.ultiwear.notifications.TournamentCheckWorker
 import com.aln.ultiwear.model.TabItem
 import com.aln.ultiwear.notifications.PostLikeCheckWorker
@@ -65,7 +65,7 @@ import com.aln.ultiwear.viewModel.WardrobeViewModel
 import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
-    private val googleAuthClient by lazy { GoogleAuthClient(this) }
+    private val authHandler by lazy { AuthHandler(this) }
 
     // retrieve a ViewModel scoped to the Activity, ensures the viewModel
     // is retained over configuration changes
@@ -73,11 +73,11 @@ class MainActivity : ComponentActivity() {
     // first used, not when the activity is created
     private val authViewModel: AuthViewModel by viewModels {
         // since normally viewModels() can only call a no-argument constructor,
-        // but AuthViewModel needs a GoogleAuthClient parameter,
+        // but AuthViewModel needs a AuthHandler parameter,
         // we give it a factory that knows how to build it
         viewModelFactory { // shorthand for ViewModelProvider.Factory
             initializer {
-                AuthViewModel(googleAuthClient)
+                AuthViewModel(authHandler)
             }
         }
     }

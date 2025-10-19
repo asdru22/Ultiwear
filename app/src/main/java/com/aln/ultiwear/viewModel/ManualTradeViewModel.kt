@@ -12,11 +12,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import java.util.UUID
 import androidx.core.net.toUri
 import androidx.lifecycle.viewModelScope
+import com.aln.ultiwear.data.TradeHandler
 import com.aln.ultiwear.data.compressAndUpload
 import com.aln.ultiwear.model.Trade
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,7 +27,8 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
 class ManualTradeViewModel(
-    private val wardrobeViewModel: WardrobeViewModel
+    private val wardrobeViewModel: WardrobeViewModel,
+    private val handler: TradeHandler = TradeHandler()
 ) : ViewModel() {
 
     private val tag = "ManualTradeViewModel"
@@ -155,24 +158,7 @@ class ManualTradeViewModel(
         photoUri: Uri?,
         tournamentName: String?
     ) {
-        val firestore = FirebaseFirestore.getInstance()
-
-        var photoUrl: String? = null
-        if (photoUri != null) {
-            photoUrl = compressAndUpload(photoUri, "trade_photos/${UUID.randomUUID()}.webp")
-        }
-
-        val trade = Trade(
-            id = firestore.collection("trades").document().id,
-            userAId = userAId?: "unknown",
-            userBId = userBId,
-            userAItems = userAItems,
-            userBItems = userBItems,
-            photoUrl = photoUrl,
-            tournamentName = tournamentName
-        )
-
-        firestore.collection("trades").document(trade.id).set(trade).await()
+        handler.uploadTrade(userAId, userBId, userAItems, userBItems, photoUri, tournamentName)
     }
 
 }

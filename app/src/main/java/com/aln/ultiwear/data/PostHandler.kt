@@ -5,6 +5,7 @@ import com.aln.ultiwear.model.Post
 import com.aln.ultiwear.model.PostedWardrobeItem
 import com.aln.ultiwear.model.WardrobeItem
 import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -14,7 +15,10 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.tasks.await
 
 
-class PostHandler(private val firestore: FirebaseFirestore = Firebase.firestore) {
+class PostHandler(
+    private val firestore: FirebaseFirestore = Firebase.firestore,
+    private val auth: FirebaseAuth = Firebase.auth
+) {
 
     private val tag = "PostHandler"
 
@@ -104,7 +108,7 @@ class PostHandler(private val firestore: FirebaseFirestore = Firebase.firestore)
     }
 
     suspend fun hasUserExpressedInterest(itemId: String): Boolean {
-        val currentUser = Firebase.auth.currentUser ?: return false
+        val currentUser = auth.currentUser ?: return false
 
         return try {
             val snapshot = firestore
@@ -118,5 +122,40 @@ class PostHandler(private val firestore: FirebaseFirestore = Firebase.firestore)
             Log.e(tag, "Failed to check trade interest", e)
             false
         }
+    }
+
+    fun addTradeInterest(
+        itemId: String,
+        ownerId: String,
+        onSuccess: () -> Unit = {},
+        onFailure: (Exception) -> Unit = {}
+    ) {
+        val currentUser = auth.currentUser ?: return
+
+        val tradeRef = firestore.collection("trade_interests")
+
+        // prevent duplicate entries
+        tradeRef
+            .whereEqualTo("itemId", itemId)
+            .whereEqualTo("interestedUserId", currentUser.uid)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                if (snapshot.isEmpty) {
+                    // user has not expressed interest yet, add document
+                    val tradeDoc = hashMapOf(
+                        "itemId" to itemId,
+                        "ownerId" to ownerId,
+                        "interestedUserId" to currentUser.uid,
+                        "timestamp" to System.currentTimeMillis()
+                    )
+                    tradeRef.add(tradeDoc)
+                        .addOnSuccessListener { onSuccess() }
+                        .addOnFailureListener { e -> onFailure(e) }
+                } else {
+                    // already expressed interest
+                    Log.d("TradeInterest", "User has already expressed interest")
+                }
+            }
+            .addOnFailureListener { e -> onFailure(e) }
     }
 }

@@ -7,20 +7,15 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aln.ultiwear.data.ApiClient
+import com.aln.ultiwear.data.EventHandler
 import com.aln.ultiwear.model.tournament.TournamentUi
-import com.aln.ultiwear.notifications.NotificationScheduler
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
 
-class EventViewModel : ViewModel() {
+class EventViewModel(private val handler: EventHandler = EventHandler()) : ViewModel() {
     val tag = "EventViewModel"
     val events = mutableStateListOf<TournamentUi>()
     val attendances = mutableStateMapOf<Int, Boolean>() // tournamentID -> attending
-
-    private val firestore = FirebaseFirestore.getInstance()
-    private val auth = FirebaseAuth.getInstance()
 
     init {  // when the viewModel is created, load the events and the attendances
         loadEvents()
@@ -65,44 +60,10 @@ class EventViewModel : ViewModel() {
     }
 
     private fun loadUserAttendances() {
-        val uid = auth.currentUser?.uid ?: return
-        firestore.collection("user_attendance")
-            .document(uid)
-            .collection("tournaments")
-            .get()
-            .addOnSuccessListener { snapshot ->
-                snapshot.documents.forEach { doc ->
-                    val tournamentId = doc.getLong("tournamentId")?.toInt()
-                        ?: return@forEach
-                    val attending = doc.getBoolean("attending") ?: false
-                    attendances[tournamentId] = attending
-                }
-            }
-            .addOnFailureListener {
-                Log.e(tag, "Failed to load attendances: ${it.message}")
-            }
+        handler.loadUserAttendances(attendances)
     }
 
     fun setAttendance(context: Context, tournament: TournamentUi, attending: Boolean) {
-        val uid = auth.currentUser?.uid ?: return
-        attendances[tournament.id] = attending
-
-        val docRef = firestore.collection("user_attendance")
-            .document(uid)
-            .collection("tournaments")
-            .document(tournament.id.toString())
-
-        val data = mapOf(
-            "tournamentId" to tournament.id, // tournamentId saved for ease of access
-            "attending" to attending,
-            "timestamp" to System.currentTimeMillis()
-        )
-
-        NotificationScheduler.scheduleDailyReminder(context)
-        Log.i(tag, "Updated schedule")
-
-        docRef.set(data)
-            .addOnSuccessListener { Log.i(tag, "Attendance saved for $tournament") }
-            .addOnFailureListener { Log.e(tag, "Failed to save attendance: ${it.message}") }
+        handler.setAttendance(context, tournament, attending, attendances)
     }
 }

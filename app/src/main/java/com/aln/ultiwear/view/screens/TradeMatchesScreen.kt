@@ -42,6 +42,8 @@ import com.aln.ultiwear.model.TradeMatch
 import com.aln.ultiwear.viewModel.BrowseViewModel
 import com.aln.ultiwear.viewModel.EventViewModel
 import com.aln.ultiwear.viewModel.TradeMatchesViewModel
+import com.google.firebase.Firebase
+import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -123,8 +125,7 @@ fun TradeMatchesScreen(
         } else {
             MatchItems(
                 displayMatches = displayMatches,
-                showIncoming = showIncoming,
-                viewModel = viewModel
+                showIncoming = showIncoming
             )
 
         }
@@ -135,7 +136,6 @@ fun TradeMatchesScreen(
 fun MatchItems(
     displayMatches: List<TradeMatch>,
     showIncoming: Boolean,
-    viewModel: TradeMatchesViewModel
 ) {
     val context = LocalContext.current
 
@@ -154,7 +154,8 @@ fun MatchItems(
                             try {
                                 val usersToNotify = if (!showIncoming) {
                                     // Posted items: notify all users interested in this item
-                                    val snapshot = viewModel.firestore.collection("trade_interests")
+                                    val snapshot = Firebase.firestore
+                                        .collection("trade_interests")
                                         .whereEqualTo("itemId", match.item.id)
                                         .get().await()
                                     snapshot.documents.mapNotNull { it.getString("interestedUserId") }

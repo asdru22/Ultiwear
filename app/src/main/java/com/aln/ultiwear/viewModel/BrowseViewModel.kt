@@ -9,7 +9,6 @@ import com.aln.ultiwear.data.PostHandler
 import com.aln.ultiwear.model.PostedWardrobeItem
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
-import com.google.firebase.firestore.firestore
 import kotlinx.coroutines.launch
 
 class BrowseViewModel(val handler: PostHandler = PostHandler()) : ViewModel() {
@@ -67,33 +66,7 @@ class BrowseViewModel(val handler: PostHandler = PostHandler()) : ViewModel() {
         onSuccess: () -> Unit = {},
         onFailure: (Exception) -> Unit = {}
     ) {
-        val currentUser = Firebase.auth.currentUser ?: return
-
-        val tradeRef = Firebase.firestore.collection("trade_interests")
-
-        // prevent duplicate entries
-        tradeRef
-            .whereEqualTo("itemId", itemId)
-            .whereEqualTo("interestedUserId", currentUser.uid)
-            .get()
-            .addOnSuccessListener { snapshot ->
-                if (snapshot.isEmpty) {
-                    // user has not expressed interest yet, add document
-                    val tradeDoc = hashMapOf(
-                        "itemId" to itemId,
-                        "ownerId" to ownerId,
-                        "interestedUserId" to currentUser.uid,
-                        "timestamp" to System.currentTimeMillis()
-                    )
-                    tradeRef.add(tradeDoc)
-                        .addOnSuccessListener { onSuccess() }
-                        .addOnFailureListener { e -> onFailure(e) }
-                } else {
-                    // already expressed interest
-                    Log.d("TradeInterest", "User has already expressed interest")
-                }
-            }
-            .addOnFailureListener { e -> onFailure(e) }
+        handler.addTradeInterest(itemId, ownerId, onSuccess, onFailure)
     }
 
     suspend fun hasUserExpressedInterest(itemId: String): Boolean {
