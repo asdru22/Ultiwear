@@ -1,0 +1,115 @@
+package com.aln.ultiwear.data
+
+import android.Manifest.permission.POST_NOTIFICATIONS
+import android.content.Context
+import android.content.pm.PackageManager
+import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.edit
+import androidx.work.CoroutineWorker
+import androidx.work.WorkerParameters
+import com.aln.ultiwear.R
+import com.aln.ultiwear.model.tournament.TournamentUi
+import java.time.ZonedDateTime
+
+// background worker scheduled via WorkManager
+class TournamentCheckWorker(
+    appContext: Context,
+    workerParams: WorkerParameters
+) : CoroutineWorker(appContext, workerParams) {
+
+    // start the background task
+    override suspend fun doWork(): Result {
+        return try {
+
+            // call the API to get the events
+            val result = ApiClient.api.getEvents()
+
+            // load tournament ids from previous call
+            // open sharedPreferences XML file
+            val prefs = applicationContext.getSharedPreferences(
+                "tournaments_prefs",
+                Context.MODE_PRIVATE
+            )
+
+            // get ids of tournaments from previous call
+            // in the prefs, look for the key "known_ids"
+            // if it's there, return the associated values (Set<String>)
+            // otherwise return an empty set
+            val savedIds = prefs.getStringSet(
+                "known_ids",
+                emptySet()
+            ) ?: emptySet()
+
+            // prepare to save new tournaments
+            val newTournaments = mutableListOf<TournamentUi>()
+            // the ids in this execution
+            val currentIds = mutableSetOf<String>()
+            val today = ZonedDateTime.now()
+
+            // iterate over each event and edition
+            result.data.forEach { event ->
+                event.editions.forEach { ed ->
+                    val start = ZonedDateTime.parse(ed.startDate)
+                    if (start.isAfter(today)) {
+                        // if its a future tournament, add it to the list
+                        currentIds.add(ed.id.toString())
+                        // if it wasn't in the saved IDs, add it to newTournaments
+                        if (!savedIds.contains(ed.id.toString())) {
+                            newTournaments.add(
+                                TournamentUi(
+                                    id = ed.id,
+                                    name = event.name,
+                                    startDate = ed.startDate,
+                                    endDate = ed.endDate,
+                                    lat = ed.lat,
+                                    lng = ed.lng,
+                                    country = ed.country?.enShortName
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+
+            // if the list is not empty, send a notification
+            if (newTournaments.isNotEmpty()) {
+                newTournaments.forEach {
+                    sendNotification(it.name)
+                }
+            }
+
+            // update prefs with the new ids
+            prefs.edit { putStringSet("known_ids", currentIds) }
+
+            Result.success()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.retry()
+        }
+    }
+
+    private fun sendNotification(tournamentName: String) {
+        val notification = NotificationCompat.Builder(
+            applicationContext,
+            "ultiwear_channel"
+        )
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle("New Tournament Added!")
+            .setContentText(tournamentName)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .build()
+
+        with(NotificationManagerCompat.from(applicationContext)) {
+            // check for permission to send notifications
+            if (ActivityCompat.checkSelfPermission(
+                    applicationContext,
+                    POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                notify(1456, notification)
+            }
+        }
+    }
+}

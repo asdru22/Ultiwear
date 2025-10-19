@@ -42,7 +42,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.aln.ultiwear.data.GoogleAuthClient
+import com.aln.ultiwear.data.TournamentCheckWorker
 import com.aln.ultiwear.model.TabItem
 import com.aln.ultiwear.ui.theme.LocalBottomBarBackground
 import com.aln.ultiwear.ui.theme.UltiwearTheme
@@ -57,6 +61,7 @@ import com.aln.ultiwear.viewModel.AuthViewModel
 import com.aln.ultiwear.viewModel.BrowseViewModel
 import com.aln.ultiwear.viewModel.EventViewModel
 import com.aln.ultiwear.viewModel.WardrobeViewModel
+import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
     private val googleAuthClient by lazy { GoogleAuthClient(this) }
@@ -98,6 +103,18 @@ class MainActivity : ComponentActivity() {
                 NotificationManager.IMPORTANCE_DEFAULT
             )
         )
+
+        val workRequest = PeriodicWorkRequestBuilder<TournamentCheckWorker>(
+            1, TimeUnit.HOURS
+        ).build()
+
+        WorkManager.getInstance(this)
+            .enqueueUniquePeriodicWork(
+                "tournament_check",
+                ExistingPeriodicWorkPolicy.KEEP, // don’t start a new one if already running
+                workRequest
+            )
+
 
         setContent {
             UltiwearTheme {
