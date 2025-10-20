@@ -1,6 +1,8 @@
 #import "@preview/codly:1.3.0": *
 
 #show link: it => underline(text(fill: blue, it))
+#set page(numbering: "1")
+#set heading(numbering: "1.1")
 
 #let img(path) = box(
     scale(10%, image("img/" + path + ".png"), reflow: true),
@@ -24,6 +26,12 @@
     grid.cell(content),
 )
 
+#let double-img(i1,i2) = align(center, grid(
+    columns: (1fr,) * 2,
+    gutter: 20pt,
+    img(i1), img(i2),
+))
+
 // ----------- //
 #show: codly-init.with()
 
@@ -39,9 +47,9 @@ Matricola: `0001027757`
 
 #outline(title: [Indice])
 
-#pagebreak()
-#set page(numbering: "1")
-#set heading(numbering: "1.1")
+#v(100pt)
+
+
 
 #counter(page).update(1)
 
@@ -133,6 +141,13 @@ Qui l'utente può inserire dati e foto relativi ai suoi capi d'abbigliamento.
 
 Inizialmente per gestire la cancellazione di un capo si eliminava il documento corrispondente. Dopo aver aggiunto i post e timeline degli scambi, è stato utilizzato un metodo che non elimina i propri capi, ma li nasconde solamente. Il post associato invece viene eliminato, ma dato che l'item originale esiste ancora sul database, vi si può fare riferimento per mostrare gli item dati via in uno scambio.
 
+Le foto degli item (e come si vedrà in seguito, anche quelle degli scambi) vengono modificate prima di essere caricate sul database. Una singola foto scattata occupa dai 3.5MB ai 4MB. Dato che Firebase fornisce 1GB di memoria prima di far pagare per ogni megabyte occupato, per sicurezza ho implementato due metodi che riducono la dimensione dell'immagine.
+```kt
+val baos = ByteArrayOutputStream()
+bitmap.compress(Bitmap.CompressFormat.WEBP, 80, baos)
+val bytes = baos.toByteArray()
+```
+Questo metodo, dopo aver ricavato la `bitmap` dell'immagine scattata con la fotocamera, converte l'immagine in formato WEBP#footnote[Le immagini WEBP hanno dimensione minore di quelle in formato PNG o JPEG.] con una qualità pari all'80% di quella originale. Infine i byte dell'immagine vengono caricati su Firebase.
 = Esplora/Browse
 
 #side-img(
@@ -192,3 +207,76 @@ var selectedTab by remember { mutableIntStateOf(0) }
 val tabs = listOf("Matches", "Manual Trade", "Quick Trade")
 ```
 Per ogni `tab`, se la sua posizione nella lista coincide con l'indice, il suo sfondo viene colorato per evidenziare che è quella selezionata. Un altro stato, `showTradesDialog` (booleano) indica se bisogna mostrare il dialogo che contiene lo storico degli scambi.
+
+== Matches
+In questa sezione è possibile visualizzare i tornei a cui parteciperanno gli utenti che hanno espresso interesse per un determinato capo, o per i quali l'utente stesso ha mostrato interesse.
+#double-img("posted_items","interested_items")
+
+In _Posted Items_ puoi vedere quante persone sono interessate agli oggetti che hai pubblicato e che parteciperanno a un torneo a cui sarai presente anche tu. Ad esempio, due persone che vogliono scambiare la maglia dell'Italia saranno a _Pw'Hat_, a cui ci sarò anch'io.
+In _Interested Items_ puoi invece visualizzare gli oggetti per cui hai espresso interesse, i cui proprietari saranno presenti a un torneo in comune con te. Ad esempio, l'utente proprietario della canottiera del giappone per la quale ho espresso interesse a scambiare sarà, come me, ai _Beach Masters Barcelona_.
+
+Anche in questa _view_, uno stato `var showIncoming by remember { mutableStateOf(false) }` si occupa di indicare quale sezione sarà visibile.\
+La struttura è gestita da un unico componente _composable_, il quale, in base al valore della variabile `showIncoming`, determina quale delle due liste utilizzare per popolare il contenuto. L'assegnazione avviene tramite `displayMatches = if (showIncoming) incomingMatches else matches`.
+
+`TradeMatchesViewModel` si occupa di fare gli incroci tra i tornei e gli oggetti che gli utenti vogliono scambiare. Dato che richiede le gli eventi e gli _item_ di un utente, esso dispone di riferimenti ai `ViewModel` delle sezioni _browse_ ed _events_. Prima di calcolare gli incroci, si attende che i valori dei ViewModel richiesti siano pronti.
+```kt
+viewModelScope.launch {
+  combine(
+      snapshotFlow { browseViewModel.items.value.isNotEmpty() },
+      snapshotFlow { eventViewModel.events.isNotEmpty() }
+  ) { browseReady, eventsReady ->
+      browseReady && eventsReady
+  }
+      .filter { it }
+      .first()
+  loadPostedMatches()
+  loadInterestedMatches()
+}
+```
+Viene avviata una coroutine legata al ciclo di vita di `TradeMatchesViewModel`.
+All'interno di essa, gli stati osservabili dei `ViewModel` dipendenti (`browseViewModel` ed `eventViewModel`) vengono convertiti in `Flow`, affinché si possano osservare le variazioni dei loro valori.
+Le due `Flow` vengono combinate tramite l'operatore `combine`, in modo da produrre un unico flusso che emette un valore booleano ogni volta che uno dei due stati cambia. Il valore emesso è `true` solo quando entrambi i `ViewModel` hanno completato il caricamento dei propri dati.
+Infine si filtrano solo i valori `true`, e il metodo `first()` sospende la coroutine fino alla prima emissione valida.
+Quando entrambi i `ViewModel` hanno terminato il caricamento, la coroutine riprende l'esecuzione ed esegue le funzioni `loadPostedMatches()` e `loadInterestedMatches()`, il calcolo delle combinazioni è delegato a `TradeHandler`.\
+
+Per quanto riguarda ricavare gli utenti interessati ai propri capi si eseguono i seguenti passi:
++ da Firebase, seleziona tutti i `trade_interests` associati ad oggetti che l'utente possiede;
++ mappa l'id di un item a una liste di id di utenti interessati, usata per fare controlli più veloci (`tradeMap`);
++ ottieni una lista di utenti interessati a oggetti che l'utente corrente possiede, rimuovendo duplicati;
++ mappa le coppie `<userID, tournamentID>` a un booleano per indicare se un utente parteciperà a un certo torneo;
++ per ogni oggetto pubblicato, recupera gli utenti interessati dalla `tradeMap`;
++ per ogni torneo a cui l'utente partecipa, conta quanti interessati partecipano a quel torneo;
++ se c'è ne è almeno 1, aggiungi quel torneo e il numero di interessati ai valori da restituire;
+
+Per ricavare i tornei in cui saranno presenti i proprietari dei capi per cui si ha espresso interesse di scambio si eseguono passaggi simili:
++ si ottengono i `trade_interests` dell'utente da Firebase;
++ si estraggono gli id degli oggetti interessati;
++ controllo aggiuntivo per ogni _item_ per assicurarsi che esista ancora;
++ selezione tornei a cui partecipa l'utente in una mappa `<tournamentID, boolean>`;
++ preparazione di una mappa `<<ownerId, tournamentId>, Boolean>` (`attendanceMap`) che indica se un proprietario sarà presente o meno ad un torneo specifico;
++ per ogni proprietario:
+  + si recuperano i tornei a cui esso partecipa;
+  + si aggiorna `attendanceMap` per ogni torneo di quell'utente;
++ per ogni oggetto interessato:
+  + controlla ogni torneo a cui l'utente partecipa;
+  + verifica se il proprietario dell'_item_ sarà presente;
+  + in caso positivo, recupera i dettagli del torneo e aggiungili a quelli da restituire.
+
+== Manual Trade
+La sezione _manual trade_ permette di rimuovere rapidamente uno o più _item_ dal proprio guardaroba, e aggiungerne altri in un'ipotetica situazione di scambio. Si potranno selezionare gli item da dare via, e quelli ricevuti. Inoltre è possibile scattare una foto e selezionare l'evento presso cui è stato fatto lo scambio tra una lista dei 3 più vicini per località.\
+Questo tipo di scambio è a quello rapido, che verrà mostrato in seguito, se l'utente con cui si sta scambiando non ha l'app.
+
+#double-img("manual_trade1","manual_trade2")
+La maglia con il bordo azzurro è l'item che ho deciso di dare via, i due pantaloni sono gli item che sto ricevendo. Scorrendo in basso è possibile scattare una foto del momento, e selezionare il torneo dove è stato fatto lo scambio.
+Per ottenere i 3 eventi più vicini è abbastanza facile, dato che l'api fornisce latitudine e longitudine di quasi tutti i tornei.
++ dalla lista degli eventi si eliminano quelli senza latitudine e longitudine;
++ per ogni torneo:
+  + prepara calcola la distanza tra la posizione attuale e il torneo;
+  + crea una coppia `<tournament, distance>`.
++ ordina le coppie in base alla distanza;
++ prendi le prime 3.
+Dato che la distanza viene calcolata in metri, nella card viene formattata per mostrare i kilometri.
+
+== Quick Trade
+Lo scambio rapido può essere svolto tra utenti che possiedono l'app. Si crea una sessione di scambio che per entrambi permette di selezionare gli _item_ che si stanno dando via e quelli che si stanno ricevendo.\
+Un utente inizierà la sessione di scambio, generando un _qrcode_. L'altro potrà usare uno scanner per inquadrare il _qrcode_ e dare via alla sessione di scambio.

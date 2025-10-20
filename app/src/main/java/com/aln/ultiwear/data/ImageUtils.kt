@@ -23,14 +23,16 @@ suspend fun compressAndUpload(uri: Uri, path: String): String? =
         try {
             val context = Firebase.app.applicationContext
 
-            // load bitmap
+            // load bitmap from camera
             val inputStream = context.contentResolver.openInputStream(uri)
                 ?: throw IllegalArgumentException("Cannot open URI")
+            // rotate the bitmap
             val bitmap = rotateBitmap(BitmapFactory.decodeStream(inputStream))
 
             // compress to WEBP
             val baos = ByteArrayOutputStream()
             bitmap.compress(Bitmap.CompressFormat.WEBP, 80, baos)
+            // get compressed image bytes
             val bytes = baos.toByteArray()
 
             // upload to firebase
@@ -38,7 +40,7 @@ suspend fun compressAndUpload(uri: Uri, path: String): String? =
             ref.putBytes(bytes).await()
             ref.downloadUrl.await().toString()
         } catch (e: Exception) {
-            Log.e(tag, "compressAndUpload failed: ${e.message}")
+            Log.e(tag, "compress and upload failed: ${e.message}")
             null
         }
     }

@@ -100,12 +100,17 @@ class TradeHandler(
             if (usersInterested.isEmpty()) return@forEach
 
             attendingTournamentIds.forEach { tournamentId ->
+                // get the number of interested users
                 val matchCount = usersInterested.count { userId ->
+                    // create the pair (userID,tournamentId) so
+                    // that it can be used as a key in the attendance map
                     attendanceMap[userId to tournamentId] == true
                 }
-                if (matchCount > 0) {
+                // if there's at least one
+                if (matchCount >= 1) {
                     val tournament =
                         allEvents.firstOrNull { it.id == tournamentId } ?: return@forEach
+                    // get and add tournament details
                     newMatches.add(
                         TradeMatch(
                             item = postedItem.wardrobeItem,
@@ -139,7 +144,7 @@ class TradeHandler(
             .mapNotNull { it.getString("itemId") }
         if (interestedItemIds.isEmpty()) return emptyList()
 
-        // fetch items user is interested in
+        // check if the item the user is interested in is posted/still exists
         val allItems = browseItems.filter {
             interestedItemIds.contains(it.wardrobeItem.id)
         }

@@ -3,13 +3,16 @@ package com.aln.ultiwear.viewModel
 import android.util.Log
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshotFlow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aln.ultiwear.data.TradeHandler
 import com.aln.ultiwear.model.TradeMatch
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class TradeMatchesViewModel(
@@ -31,11 +34,25 @@ class TradeMatchesViewModel(
 
 
     fun loadMatchesWhenReady() {
+        // start a coroutine tied to the ViewModel
         viewModelScope.launch {
-            // wait for browseViewModel and eventViewModel to load
-            while (browseViewModel.items.value.isEmpty() || eventViewModel.events.isEmpty()) {
-                delay(100)
+            // observe multiple flows at once
+            // and react when any of them emit a new value
+            combine(
+                // convert the states into snapshotFlows
+                snapshotFlow { browseViewModel.items.value.isNotEmpty() },
+                snapshotFlow { eventViewModel.events.isNotEmpty() }
+                // merge the latest values from both into a single flow
+                // indicates if both are ready
+            ) { browseReady, eventsReady ->
+                browseReady && eventsReady
             }
+                // only pass the flows that are true
+                .filter { it }
+                // resume the coroutine after the first value that has passed
+                // and stop observing the previous flows
+                .first()
+
             loadPostedMatches()
             loadInterestedMatches()
         }

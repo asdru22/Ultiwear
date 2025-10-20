@@ -156,7 +156,7 @@ fun ManualTradeContent(
         // if current location is not null (loc permission was granted)
         currentLocation?.let { loc ->
             eventViewModel.events
-                // remove any events that don't have latitude or longitue
+                // remove any events that don't have latitude or longitude
                 .filter { it.lat != null && it.lng != null }
                 .map { t ->
                     // because the android API uses a FloatArray to store the distance
