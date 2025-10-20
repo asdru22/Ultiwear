@@ -80,11 +80,7 @@ fun ProfileScreen(
 
         Spacer(Modifier.height(200.dp))
 
-        val context = LocalContext.current
-        Button(
-            onClick = { testNotificationNow(context) },
-            content = { Text("Test Notification") }
-        )
+        CheckNotificationButton()
         CheckLikesButton()
     }
 }
@@ -119,21 +115,27 @@ fun UserInfo(user: FirebaseUser) {
 }
 
 @Composable
+fun CheckNotificationButton(context: Context = LocalContext.current) {
+    Button(
+        onClick = {
+            val workRequest =
+                OneTimeWorkRequestBuilder<TournamentReminderWorker>().build()
+            WorkManager.getInstance(context).enqueue(workRequest)
+        }
+    ) { Text("Test Notification") }
+}
+
+@Composable
 fun CheckLikesButton(context: Context = LocalContext.current) {
     Button(
         onClick = {
             // request that runs immediately
-            val workRequest = OneTimeWorkRequestBuilder<PostLikeCheckWorker>().build()
+            val workRequest =
+                OneTimeWorkRequestBuilder<PostLikeCheckWorker>().build()
 
             WorkManager.getInstance(context).enqueue(workRequest)
         }
     ) {
         Text("Check Likes")
     }
-}
-
-
-private fun testNotificationNow(context: Context) {
-    val workRequest = OneTimeWorkRequestBuilder<TournamentReminderWorker>().build()
-    WorkManager.getInstance(context).enqueue(workRequest)
 }

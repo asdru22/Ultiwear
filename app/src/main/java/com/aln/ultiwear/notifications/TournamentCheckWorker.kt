@@ -1,15 +1,9 @@
 package com.aln.ultiwear.notifications
 
-import android.Manifest.permission.POST_NOTIFICATIONS
 import android.content.Context
-import android.content.pm.PackageManager
-import androidx.core.app.ActivityCompat
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.edit
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.aln.ultiwear.R
 import com.aln.ultiwear.data.ApiClient
 import com.aln.ultiwear.model.tournament.TournamentUi
 import java.time.ZonedDateTime
@@ -76,9 +70,16 @@ class TournamentCheckWorker(
 
             // if the list is not empty, send a notification
             if (newTournaments.isNotEmpty()) {
-                newTournaments.forEach {
-                    sendNotification(it.name)
-                }
+                // join all tournament names into a single comma-separated string
+                val tournamentNames = newTournaments.joinToString(", ") { it.name }
+
+                // send one notification with all names
+                sendNotification(
+                    context = applicationContext,
+                    message = "$tournamentNames.",
+                    title = "New Tournaments Added!",
+                    id = 1008
+                )
             }
 
             // update prefs with the new ids
@@ -88,29 +89,6 @@ class TournamentCheckWorker(
         } catch (e: Exception) {
             e.printStackTrace()
             Result.retry()
-        }
-    }
-
-    private fun sendNotification(tournamentName: String) {
-        val notification = NotificationCompat.Builder(
-            applicationContext,
-            "ultiwear_channel"
-        )
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("New Tournament Added!")
-            .setContentText(tournamentName)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .build()
-
-        with(NotificationManagerCompat.from(applicationContext)) {
-            // check for permission to send notifications
-            if (ActivityCompat.checkSelfPermission(
-                    applicationContext,
-                    POST_NOTIFICATIONS
-                ) == PackageManager.PERMISSION_GRANTED
-            ) {
-                notify(1456, notification)
-            }
         }
     }
 }

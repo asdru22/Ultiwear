@@ -62,6 +62,7 @@ Si cerca di rispettare il modello MVVM, sono presenti _package_ con compiti prec
 - `notifications`: si occupa dell'invio di notifiche;
 - `view`: contiene i _composable_;
 - `viewModel`: contiene i `ViewModel` intermediari tra `View` e `Model`
+L'app utilizza il `MaterialTheme` di Android.\
 
 == Primo avvio dell'app
 
@@ -112,8 +113,7 @@ Il token di login sarà poi convertito in un token Firebase, memorizzato in una 
 ```kt
 val tabs = listOf(
   TabItem(
-      "Wardrobe",
-      R.drawable.wardrobe
+      "Wardrobe", R.drawable.wardrobe
   ) {
       WardrobeScreen(wardrobeViewModel)
   },
@@ -131,6 +131,8 @@ Qui l'utente può inserire dati e foto relativi ai suoi capi d'abbigliamento.
     Ogni oggetto capo contiene la variabile booleana `owned`. Questa è usata per indicare se il capo deve essere mostrato nell'armadio, nel caso l'utente corrente non ne sia più il proprietario in seguito ad uno scambio#footnote[Eseguibile nella sezione _Quick Trade_, mostrata in seguito.].
 ]
 
+Inizialmente per gestire la cancellazione di un capo si eliminava il documento corrispondente. Dopo aver aggiunto i post e timeline degli scambi, è stato utilizzato un metodo che non elimina i propri capi, ma li nasconde solamente. Il post associato invece viene eliminato, ma dato che l'item originale esiste ancora sul database, vi si può fare riferimento per mostrare gli item dati via in uno scambio.
+
 = Esplora/Browse
 
 #side-img(
@@ -141,22 +143,52 @@ Qui l'utente può inserire dati e foto relativi ai suoi capi d'abbigliamento.
     Il `BrowseViewModel` contiene un riferimento allo stesso `handler`, e dunque `listener` del di _Wardrobe_. Dunque, quando un utente preme il bottone like, il `ViewModel` viene notificato di questo cambiamento e ricarica la colonna.
     Per evitare che un utente possa mettere like allo stesso post più volte, ogni post dispone di una collezione che contiene gli id degli utenti che hanno messo like.\
     Similmente, la collezione `trade_interests` tiene traccia degli utenti che hanno espresso interesse a scambiare un certo item.
-
 ]
-= Eventi/Upcoming Events
-Qui si possono vedere i prossimi tornei da tutto il mondo, ottenuti tramite l'api di #link("https://ultical.com/")[Ultical]. Sono _card_ ordinate dalla data di inizio più vicina alla più lontana. Ogni card ha associata una _checkbox_ per indicare se si sarà presenti ad un certo torneo.
-#side-img("events")[Il singleton `APIClient` inizializza una sola volta (tramite `by lazy`) l'interfaccia `UlticalAPI` fornendogli l'url a cui fare la chiamata HTTP, e una factory da usare per processare i dati. In questo caso si usa la libreria GSON di Google in quanto l'API di ultical restituisce un oggetto JSON.
 ```kt
-val api: UlticalApi by lazy {
-  Retrofit.Builder()
-      .baseUrl(URL)
-      .addConverterFactory(
-        GsonConverterFactory.create()
-        )
-      .build()
-      .create(UlticalApi::class.java)
+try {
+  val newLikes = handler.toggleLike(wardrobeUid, currentUser.uid)
+  // update state
+  _items.value = _items.value.map { item ->
+    if (item.wardrobeUid == wardrobeUid) {
+        item.copy(post = item.post?.copy(likes = newLikes))
+    } else item
+  }
+} catch (e: Exception) {
+  Log.e(tag, "Error toggling like", e)
 }
 ```
-L'interfaccia fornisce un metodo `getEvents()` per ottenere una lista di eventi.
+I like possono essere messi e tolti: il handler si occupa di aggiornare il database con una transazione per rendere atomica l'operazione di lettura e scrittura. Il `ViewModel` crea una copia degli _items_, e se l'id di uno di essi corrisponde con quello a cui è stato cambiato il like, si aggiorna il valore mostrato nella _card_.
+
+= Eventi/Upcoming Events
+Qui si possono vedere i prossimi tornei da tutto il mondo, ottenuti tramite l'api di #link("https://ultical.com/")[Ultical]. Sono _card_ ordinate dalla data di inizio più vicina alla più lontana. Ogni card ha associata una _checkbox_ per indicare se si sarà presenti ad un certo torneo.
+#side-img(
+    "events",
+)[
+    Il singleton `APIClient` inizializza una sola volta (tramite `by lazy`) l'interfaccia `UlticalAPI` fornendogli l'url a cui fare la chiamata HTTP, e una factory da usare per processare i dati. In questo caso si usa la libreria GSON di Google in quanto l'API di ultical restituisce un oggetto JSON. Retrofit è la libreria usata per fare chiamate HTTP.
+    ```kt
+    val api: UlticalApi by lazy {
+      Retrofit.Builder()
+          .baseUrl(URL)
+          .addConverterFactory(
+            GsonConverterFactory.create()
+            )
+          .build()
+          .create(UlticalApi::class.java)
+    }
+    ```
+    L'interfaccia fornisce un metodo `getEvents()` per ottenere una lista di eventi.
 ]
 
+Quando viene aperta questa sezione per la prima volta, prima si esegue un "flattening" dell oggetto JSON: dato che un torneo ha una lista di edizioni, ciascuna con un ID, si esegue questa operazione per lavorare su dati più omogenei. Nella lista appiattita vengono inclusi solamente gli eventi con data di inizio maggiore o uguale a quella attuale.\
+Quando un utente si dichiara presente ad un torneo, non solo si aggiorna la collezione su Firebase, ma un _listener_ sulla collezione `user_attendances` modifica la `MutableMap` `attendances`, che per ogni ID, associa un booleano per indicare se l'utente sarà presente ad un certo torneo.
+Questo esempio evidenza perfettamente l'utilità del `ViewModel`: qualora ci fosse bisogno di ricomporre lo schermo, non è necessario fare una nuova chiamata all'API, dal momento che i valori sono già memorizzati `EventViewModel`.\ Quando si apre nuovamente la schermata eventi dopo aver chiuso l'app, le presenze sono ripristinate sulla _view_ perché ogni _card_ dispone di un riferimento al `ViewModel`, che può usare per controllare se l'utente è presente al torneo con id pari a quello della _card_ che si sta componendo.
+
+= Scambi/Trades
+In questa _view_ si possono vedere e fare tutte le operazioni relative agli scambi, interagendo direttamente o indirettamente con altri utenti.
+
+La sezione degli scambi è costituita da 3 _view_. Quella attualmente in vista è controllata da una `state variable` di _compose_
+```kt
+var selectedTab by remember { mutableIntStateOf(0) }
+val tabs = listOf("Matches", "Manual Trade", "Quick Trade")
+```
+Per ogni `tab`, se la sua posizione nella lista coincide con l'indice, il suo sfondo viene colorato per evidenziare che è quella selezionata. Un altro stato, `showTradesDialog` (booleano) indica se bisogna mostrare il dialogo che contiene lo storico degli scambi.

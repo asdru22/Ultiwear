@@ -1,14 +1,8 @@
 package com.aln.ultiwear.notifications
 
-import android.Manifest.permission.POST_NOTIFICATIONS
 import android.content.Context
-import android.content.pm.PackageManager
-import androidx.core.app.ActivityCompat
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.aln.ultiwear.R
 import com.aln.ultiwear.model.Post
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
@@ -38,7 +32,12 @@ class PostLikeCheckWorker(
 
                 // check the if it has more than 5 likes and the notification wasn't yet sent
                 if (post.likes >= 5 && !post.notification) {
-                    sendNotification()
+                    sendNotification(
+                        context = applicationContext,
+                        message = "One of your posts just reached 5 likes.",
+                        title = "Popular Post!",
+                        id = 1703
+                    )
 
                     // update Firestore to set notification = true
                     doc.reference.update("notification", true)
@@ -50,30 +49,6 @@ class PostLikeCheckWorker(
         } catch (e: Exception) {
             e.printStackTrace()
             return Result.retry()
-        }
-    }
-
-    private fun sendNotification() {
-
-        val notification = NotificationCompat.Builder(
-            applicationContext,
-            "ultiwear_channel"
-        )
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("Popular Post!")
-            .setContentText("One of your posts just reached 5 likes.")
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .build()
-
-        with(NotificationManagerCompat.from(applicationContext)) {
-            // check for permission to send notifications
-            if (ActivityCompat.checkSelfPermission(
-                    applicationContext,
-                    POST_NOTIFICATIONS
-                ) == PackageManager.PERMISSION_GRANTED
-            ) {
-                notify(1703, notification)
-            }
         }
     }
 }

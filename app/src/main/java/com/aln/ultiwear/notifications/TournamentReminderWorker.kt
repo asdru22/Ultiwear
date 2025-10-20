@@ -1,18 +1,9 @@
 package com.aln.ultiwear.notifications
 
-import android.Manifest.permission.POST_NOTIFICATIONS
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
 import android.util.Log
-import androidx.core.app.ActivityCompat
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.aln.ultiwear.MainActivity
-import com.aln.ultiwear.R
 import com.aln.ultiwear.data.ApiClient
 import com.aln.ultiwear.model.tournament.TournamentUi
 import com.google.firebase.auth.FirebaseAuth
@@ -137,50 +128,13 @@ class TournamentReminderWorker(
                 "• ${t.name}: in $days days"
             }
 
-            // create the intent to launch the app when the notification is clicked
-            val launchIntent = Intent(
-                context,
-                MainActivity::class.java
-            ).apply {
-                // launch the app if its closed, or restart it if its open
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            }
 
-            // wrap the Intent in a PendingIntent, so that it can be executed later
-            val pendingIntent = PendingIntent.getActivity(
-                context,
-                0,
-                launchIntent,
-                // update an existing pending intent if it already exists
-                // make the pending intent immutable (required for security)
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            sendNotification(
+                context = context,
+                message = message,
+                title = "Upcoming tournaments",
+                id = 1234
             )
-
-            // build the notification
-            val notification = NotificationCompat.Builder(
-                context,
-                "ultiwear_channel"
-            )
-                .setSmallIcon(R.drawable.ic_launcher_foreground)
-                .setContentTitle("Upcoming Tournaments")
-                .setStyle(NotificationCompat.BigTextStyle().bigText(message))
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setContentIntent(pendingIntent)
-                // delete the notification when clicked
-                .setAutoCancel(true)
-                .build()
-
-            // show the notification
-            with(NotificationManagerCompat.from(context)) {
-                // check for permission to send notifications
-                if (ActivityCompat.checkSelfPermission(
-                        context,
-                        POST_NOTIFICATIONS
-                    ) == PackageManager.PERMISSION_GRANTED
-                ) {
-                    notify(1234, notification)
-                }
-            }
 
             Log.i(tag, "Notification sent for upcoming tournaments")
 

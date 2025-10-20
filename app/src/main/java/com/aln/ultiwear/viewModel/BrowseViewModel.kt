@@ -39,7 +39,6 @@ class BrowseViewModel(val handler: PostHandler = PostHandler()) : ViewModel() {
 
     fun toggleLike(
         postedItem: PostedWardrobeItem,
-        onError: ((Exception) -> Unit)? = null
     ) {
         val currentUser = Firebase.auth.currentUser ?: return
         val wardrobeUid = postedItem.wardrobeUid
@@ -55,7 +54,7 @@ class BrowseViewModel(val handler: PostHandler = PostHandler()) : ViewModel() {
                     } else item
                 }
             } catch (e: Exception) {
-                onError?.invoke(e)
+                Log.e(tag, "Error toggling like", e)
             }
         }
     }
