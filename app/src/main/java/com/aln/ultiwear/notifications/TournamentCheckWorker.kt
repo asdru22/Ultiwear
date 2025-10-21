@@ -17,10 +17,6 @@ class TournamentCheckWorker(
     // start the background task
     override suspend fun doWork(): Result {
         return try {
-
-            // call the API to get the events
-            val result = ApiClient.api.getEvents()
-
             // load tournament ids from previous call
             // open sharedPreferences XML file
             val prefs = applicationContext.getSharedPreferences(
@@ -42,6 +38,9 @@ class TournamentCheckWorker(
             // the ids in this execution
             val currentIds = mutableSetOf<String>()
             val today = ZonedDateTime.now()
+
+            // call the API to get the events
+            val result = ApiClient.api.getEvents()
 
             // iterate over each event and edition
             result.data.forEach { event ->

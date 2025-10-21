@@ -116,8 +116,7 @@ Successivamente, tramite stati _composable_ dell' `authViewModel`, si controlla 
         caption: [Codice per creare il prompt "_sign in with Google_" e ottenere un token di autenticazione],
     )
 ]
-In base a questi stati si mostreranno 3 _view_ diverse. Dopo aver eseguito l'accesso con Google, l'utente potrà utilizzare l'app.
-
+In base a questi stati si mostreranno 3 _view_ diverse. Dopo aver eseguito l'accesso con Google, l'utente potrà utilizzare l'app.\
 Il token di login sarà poi convertito in un token Firebase, memorizzato in una collezione come UID assieme alla mail dell'utente. Ora l'utente ha accesso all'app, e potrà navigare le sue 5 _view_.\
 `var selectedIndex by rememberSaveable { mutableIntStateOf(0) }` tiene traccia della _sub-activity_ corrente. Ognuna di esse è definita dal _composable_ `TabItem`.
 ```kt
@@ -215,11 +214,9 @@ In questa sezione è possibile visualizzare i tornei a cui parteciperanno gli ut
 #double-img("posted_items", "interested_items")
 
 In _Posted Items_ puoi vedere quante persone sono interessate agli oggetti che hai pubblicato e che parteciperanno a un torneo a cui sarai presente anche tu. Ad esempio, due persone che vogliono scambiare la maglia dell'Italia saranno a _Pw'Hat_, a cui ci sarò anch'io.
-In _Interested Items_ puoi invece visualizzare gli oggetti per cui hai espresso interesse, i cui proprietari saranno presenti a un torneo in comune con te. Ad esempio, l'utente proprietario della canottiera del giappone per la quale ho espresso interesse a scambiare sarà, come me, ai _Beach Masters Barcelona_.
-
+In _Interested Items_ puoi invece visualizzare gli oggetti per cui hai espresso interesse, i cui proprietari saranno presenti a un torneo in comune con te. Ad esempio, l'utente proprietario della canottiera del giappone per la quale ho espresso interesse a scambiare sarà, come me, ai _Beach Masters Barcelona_.\
 Anche in questa _view_, uno stato `var showIncoming by remember { mutableStateOf(false) }` si occupa di indicare quale sezione sarà visibile.\
-La struttura è gestita da un unico componente _composable_, il quale, in base al valore della variabile `showIncoming`, determina quale delle due liste utilizzare per popolare il contenuto. L'assegnazione avviene tramite `displayMatches = if (showIncoming) incomingMatches else matches`.
-
+La struttura è gestita da un unico componente _composable_, il quale, in base al valore della variabile `showIncoming`, determina quale delle due liste utilizzare per popolare il contenuto. L'assegnazione avviene tramite `displayMatches = if (showIncoming) incomingMatches else matches`.\
 `TradeMatchesViewModel` si occupa di fare gli incroci tra i tornei e gli oggetti che gli utenti vogliono scambiare. Dato che richiede le gli eventi e gli _item_ di un utente, esso dispone di riferimenti ai `ViewModel` delle sezioni _browse_ ed _events_. Prima di calcolare gli incroci, si attende che i valori dei ViewModel richiesti siano pronti.
 ```kt
 viewModelScope.launch {
@@ -282,25 +279,67 @@ Dato che la distanza viene calcolata in metri, nella card viene formattata per m
 == Quick Trade
 Lo scambio rapido può essere svolto tra utenti che possiedono l'app. Si crea una sessione di scambio che per entrambi permette di selezionare gli _item_ che si stanno dando via e quelli che si stanno ricevendo.\
 Un utente inizierà la sessione di scambio, generando un _qrcode_. L'altro potrà usare uno scanner per inquadrare il _qrcode_ e dare via alla sessione di scambio.
-
 Prima di creare il _qrcode_, il `ViewModel` inserisce nel database una `trade_session`, caratterizzata da creatore, partecipanti, data di creazioni e un booleano che indica se è pronta, ovvero se il _qrcode_ è stato scannerizzato. Inizializzata a `false`. Verrà restituito anche un id corrispondente alla sessione iniziata, che verrà convertito in un _qrcode_.\
-Per fare ciò si usa un metodo che converte la stringa in una matrice di bit, adottando il formato del _qrcode_. In seguito si itera per righe e per colonne su ogni bit di questa matrice, e dove si trova un bit `true` si disegna un pixel nero, altrimenti bianco.
-
+Per fare ciò si usa un metodo che converte la stringa in una matrice di bit, adottando il formato del _qrcode_. In seguito si itera per righe e per colonne su ogni bit di questa matrice, e dove si trova un bit `true` si disegna un pixel nero, altrimenti bianco.\
 Per la scansione dei _qrcode_ viene utilizzato un blocco `LaunchedEffect`, che inizializza e configura la fotocamera tramite _CameraX_#footnote[Liberia per Android Jetpack che semplifica l'integrazione della fotocamera nelle app Android.]. Quest'ultima consente di visualizzare in tempo reale il flusso video all'interno di un componente PreviewView.
-Attraverso il componente `ImageAnalysis`, ogni fotogramma catturato viene analizzato in tempo reale mediante la libreria _ML Kit_, che si occupa del riconoscimento dei _qrcode_.
-
+Attraverso il componente `ImageAnalysis`, ogni fotogramma catturato viene analizzato in tempo reale mediante la libreria _ML Kit_, che si occupa del riconoscimento dei _qrcode_.\
 Quando l'analisi ha successo, _ML Kit_ restituisce una lista di potenziali codici. Ognuno di essi viene controllato e, se valido, viene chiamata la funzione `onQrScanned(it)`, dove `it` rappresenta la stringa decodificata dal _qrcode_.
 Questa funzione funge da callback e invoca un metodo del `ViewModel` che consente all'utente che ha effettuato la scansione di entrare nella relativa sessione di scambio.
 
 #double-img("quick_trade_qr_code", "quick_trade_scan")
 
-Il `ViewModel` modifica il documento corrispondente per inserire l'utente nei membri della sessione e dare via alla sessione di scambio, dove si potrà vedere in tempo reale gli _item_ che entrambi le parti vogliono scambiare.
-
 #side-img("quick_trade_items")[
+    Il `ViewModel` modifica il documento corrispondente per inserire l'utente nei membri della sessione e dare via alla sessione di scambio, dove si potrà vedere in tempo reale gli _item_ che entrambi le parti vogliono scambiare.
+
     Si possono selezionare dal proprio guardaroba gli item da dare, e quelli non dichiarati come scambiabili non saranno visibili. Si possono inoltre vedere gli item che si stanno ricevendo.\
-    Quando entrambi confermano, gli item verranno trasferiti automaticamente nei corrispettivi nuovi armadi.
+    Quando entrambi confermano, gli item verranno trasferiti automaticamente nei corrispettivi nuovi armadi. Per finalizzare lo scambio, si imposta `confirmedBySender` o `confirmedByReceiver` nel database a true, quando entrambi sono veri si creano copie degli item scambiati, dove l'id dei proprietari vengono invertiti. In questo modo si ha un riferimento all oggetto scambiato associato a se, anche l'utente a cui è stato dato lo scambia nuovamente o elimina.\
+    I dati relativi allo scambio vengono caricati una sola volta sul database, sarà poi il `TradeHandler` a determinare quali oggetti mostrare in base all'id dell'utente.
 ]
 
 == Storico Scambi
-
+#side-img("trade_history")[
+    Qui si possono vedere gli scambi fatti in passato, ordinati in ordine cronologico a partire dal più recente. Per ogni scambio si può vedere la data, torneo, la foto scattata e gli oggetti ceduti e ricevuti.\
+    Il `TradeHandler` ottiene una lista di scambi, dove l'utente corrente è o `userA` o `userB`. Per ognuno di questi, si crea un oggetto `Trade`. Questo insieme di liste viene usato dal `TradeViewModel` per avere accesso nella view _Trades_, indipendentemente dallo stato della pagina, agli scambi passati.
+]
 = Notifiche
+L'app può inviare 3 tipi di notifiche periodicamente. Nella `MainActivity` viene creato il canale usato per la ricezione delle notifiche.
+== Quando è stato aggiunto un nuovo torneo
+Sempre nella `MainActivity` viene definito il worker che controlla ogni ora se ci sono nuovi tornei.
+```kt
+val tournamentCheckRequest = PeriodicWorkRequestBuilder<TournamentCheckWorker>(
+  1, TimeUnit.HOURS
+).build()
+
+WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+  "tournament_check",
+  ExistingPeriodicWorkPolicy.KEEP,
+  tournamentCheckRequest
+)
+```
+#side-img("notif_new_tournaments")[
+    Dato che i `ViewModel` sono collegati al lifecycle dei _composable_, non possono essere usati per queste operazioni in background. Nel metodo `doWork()` del `CoroutineWorker` associato a questo lavoro, si eseguono i seguenti passi:
+]
++ carica i dati salvati nel work precedente nella _preferences_ (_storage_ XML che contiene coppie chiave-valore);
++ tra questi, seleziona gli id dei tornei salvati;
++ esegui la chiamata all'API;
++ per ogni evento ed edizione:
+    + se inizia in un giorno dopo oggi;
+    + aggiungi il suo id a quelli da salvare
+    + salva in una lista i dati di quel torneo (salvati in un oggetto `TournamentUI`, già usato nella view `Events`)
++ se questa lista non è vuota, invia una notifica con i nomi di questi tornei;
++ salva la _preference_ con gli id dei nuovi tornei,
+
+== Quando un post raggiunge i 5 like
+#align(center, img("notif_popular_post"))
+Come per la notifica precedente, il controllo periodico è fatto da un `Worker`. Nel suo metodo `doWork()`:
++ carica tutti i post dell'utente e li converte in oggetti;
++ se il post ha un numero di like $>=$ a 5, e la notifica associata a questo post non è stata inviata
+    + invia la notifica;
+    + imposta il campo `notification` a true per indicare che la notifica è già stata mandata
+== Giorni mancanti ai prossimi 3 tornei a cui si partecipa
+#side-img(
+    "notif_upcoming_tournaments",
+)[
+    Ogni volta che un utente dichiara la sua presenza ad un torneo dalla sezione Events, viene chiamato il metodo metodo `NotificationScheduler.scheduleDailyReminder(context)`, che dopo un delay per assicurarsi che inizi a mezzogiorno, avvia un `Worker` che ogni giorno informa l'utente di quanti giorni mancano ai suoi 3 tornei più vicini.
+]
+Nel metodo `doWork()`, si invoca l'API per ottenere la lista dei tornei, i dati vengono convertiti in una lista di tornei, ignorando quelli passati, e si selezionano quelli a cui l'utente ha dichiarato di partecipare. Tra questi, si calcola la differenza tra il giorno attuale e il giorno in cui essi iniziano, e in base a questo valore si ordina la lista. Infine si selezionano i nomi dei primi 3 tornei, con associati i giorni che mancano. Questi sono i valori che verranno comunicati dalla notifica.

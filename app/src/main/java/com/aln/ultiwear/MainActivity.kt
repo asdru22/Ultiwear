@@ -110,11 +110,11 @@ class MainActivity : ComponentActivity() {
         ).build()
 
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-                "tournament_check",
-                // don't start a new one if it's already running
-                ExistingPeriodicWorkPolicy.KEEP,
+            "tournament_check",
+            // don't start a new one if it's already running
+            ExistingPeriodicWorkPolicy.KEEP,
             tournamentCheckRequest
-            )
+        )
 
         val postLikeCheckRequest =
             PeriodicWorkRequestBuilder<PostLikeCheckWorker>(
