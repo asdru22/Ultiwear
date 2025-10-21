@@ -26,7 +26,7 @@
     grid.cell(content),
 )
 
-#let double-img(i1,i2) = align(center, grid(
+#let double-img(i1, i2) = align(center, grid(
     columns: (1fr,) * 2,
     gutter: 20pt,
     img(i1), img(i2),
@@ -103,7 +103,7 @@ L'app utilizza il `MaterialTheme` di Android.\
 Successivamente, tramite stati _composable_ dell' `authViewModel`, si controlla che l'utente sia registrato e connesso a internet.
 #side-img(
     "google_auth",
-)[In base a questi stati si mostreranno 3 _view_ diverse. Dopo aver eseguito l'accesso con Google, l'utente potrà utilizzare l'app.
+)[
     #figure(
         ```kt
         GetCredentialRequest.Builder().addCredentialOption(
@@ -116,6 +116,8 @@ Successivamente, tramite stati _composable_ dell' `authViewModel`, si controlla 
         caption: [Codice per creare il prompt "_sign in with Google_" e ottenere un token di autenticazione],
     )
 ]
+In base a questi stati si mostreranno 3 _view_ diverse. Dopo aver eseguito l'accesso con Google, l'utente potrà utilizzare l'app.
+
 Il token di login sarà poi convertito in un token Firebase, memorizzato in una collezione come UID assieme alla mail dell'utente. Ora l'utente ha accesso all'app, e potrà navigare le sue 5 _view_.\
 `var selectedIndex by rememberSaveable { mutableIntStateOf(0) }` tiene traccia della _sub-activity_ corrente. Ognuna di esse è definita dal _composable_ `TabItem`.
 ```kt
@@ -210,7 +212,7 @@ Per ogni `tab`, se la sua posizione nella lista coincide con l'indice, il suo sf
 
 == Matches
 In questa sezione è possibile visualizzare i tornei a cui parteciperanno gli utenti che hanno espresso interesse per un determinato capo, o per i quali l'utente stesso ha mostrato interesse.
-#double-img("posted_items","interested_items")
+#double-img("posted_items", "interested_items")
 
 In _Posted Items_ puoi vedere quante persone sono interessate agli oggetti che hai pubblicato e che parteciperanno a un torneo a cui sarai presente anche tu. Ad esempio, due persone che vogliono scambiare la maglia dell'Italia saranno a _Pw'Hat_, a cui ci sarò anch'io.
 In _Interested Items_ puoi invece visualizzare gli oggetti per cui hai espresso interesse, i cui proprietari saranno presenti a un torneo in comune con te. Ad esempio, l'utente proprietario della canottiera del giappone per la quale ho espresso interesse a scambiare sarà, come me, ai _Beach Masters Barcelona_.
@@ -255,24 +257,24 @@ Per ricavare i tornei in cui saranno presenti i proprietari dei capi per cui si 
 + selezione tornei a cui partecipa l'utente in una mappa `<tournamentID, boolean>`;
 + preparazione di una mappa `<<ownerId, tournamentId>, Boolean>` (`attendanceMap`) che indica se un proprietario sarà presente o meno ad un torneo specifico;
 + per ogni proprietario:
-  + si recuperano i tornei a cui esso partecipa;
-  + si aggiorna `attendanceMap` per ogni torneo di quell'utente;
+    + si recuperano i tornei a cui esso partecipa;
+    + si aggiorna `attendanceMap` per ogni torneo di quell'utente;
 + per ogni oggetto interessato:
-  + controlla ogni torneo a cui l'utente partecipa;
-  + verifica se il proprietario dell'_item_ sarà presente;
-  + in caso positivo, recupera i dettagli del torneo e aggiungili a quelli da restituire.
+    + controlla ogni torneo a cui l'utente partecipa;
+    + verifica se il proprietario dell'_item_ sarà presente;
+    + in caso positivo, recupera i dettagli del torneo e aggiungili a quelli da restituire.
 
 == Manual Trade
 La sezione _manual trade_ permette di rimuovere rapidamente uno o più _item_ dal proprio guardaroba, e aggiungerne altri in un'ipotetica situazione di scambio. Si potranno selezionare gli item da dare via, e quelli ricevuti. Inoltre è possibile scattare una foto e selezionare l'evento presso cui è stato fatto lo scambio tra una lista dei 3 più vicini per località.\
 Questo tipo di scambio è a quello rapido, che verrà mostrato in seguito, se l'utente con cui si sta scambiando non ha l'app.
 
-#double-img("manual_trade1","manual_trade2")
+#double-img("manual_trade1", "manual_trade2")
 La maglia con il bordo azzurro è l'item che ho deciso di dare via, i due pantaloni sono gli item che sto ricevendo. Scorrendo in basso è possibile scattare una foto del momento, e selezionare il torneo dove è stato fatto lo scambio.
 Per ottenere i 3 eventi più vicini è abbastanza facile, dato che l'api fornisce latitudine e longitudine di quasi tutti i tornei.
 + dalla lista degli eventi si eliminano quelli senza latitudine e longitudine;
 + per ogni torneo:
-  + prepara calcola la distanza tra la posizione attuale e il torneo;
-  + crea una coppia `<tournament, distance>`.
+    + prepara calcola la distanza tra la posizione attuale e il torneo;
+    + crea una coppia `<tournament, distance>`.
 + ordina le coppie in base alla distanza;
 + prendi le prime 3.
 Dato che la distanza viene calcolata in metri, nella card viene formattata per mostrare i kilometri.
@@ -280,3 +282,25 @@ Dato che la distanza viene calcolata in metri, nella card viene formattata per m
 == Quick Trade
 Lo scambio rapido può essere svolto tra utenti che possiedono l'app. Si crea una sessione di scambio che per entrambi permette di selezionare gli _item_ che si stanno dando via e quelli che si stanno ricevendo.\
 Un utente inizierà la sessione di scambio, generando un _qrcode_. L'altro potrà usare uno scanner per inquadrare il _qrcode_ e dare via alla sessione di scambio.
+
+Prima di creare il _qrcode_, il `ViewModel` inserisce nel database una `trade_session`, caratterizzata da creatore, partecipanti, data di creazioni e un booleano che indica se è pronta, ovvero se il _qrcode_ è stato scannerizzato. Inizializzata a `false`. Verrà restituito anche un id corrispondente alla sessione iniziata, che verrà convertito in un _qrcode_.\
+Per fare ciò si usa un metodo che converte la stringa in una matrice di bit, adottando il formato del _qrcode_. In seguito si itera per righe e per colonne su ogni bit di questa matrice, e dove si trova un bit `true` si disegna un pixel nero, altrimenti bianco.
+
+Per la scansione dei _qrcode_ viene utilizzato un blocco `LaunchedEffect`, che inizializza e configura la fotocamera tramite _CameraX_#footnote[Liberia per Android Jetpack che semplifica l'integrazione della fotocamera nelle app Android.]. Quest'ultima consente di visualizzare in tempo reale il flusso video all'interno di un componente PreviewView.
+Attraverso il componente `ImageAnalysis`, ogni fotogramma catturato viene analizzato in tempo reale mediante la libreria _ML Kit_, che si occupa del riconoscimento dei _qrcode_.
+
+Quando l'analisi ha successo, _ML Kit_ restituisce una lista di potenziali codici. Ognuno di essi viene controllato e, se valido, viene chiamata la funzione `onQrScanned(it)`, dove `it` rappresenta la stringa decodificata dal _qrcode_.
+Questa funzione funge da callback e invoca un metodo del `ViewModel` che consente all'utente che ha effettuato la scansione di entrare nella relativa sessione di scambio.
+
+#double-img("quick_trade_qr_code", "quick_trade_scan")
+
+Il `ViewModel` modifica il documento corrispondente per inserire l'utente nei membri della sessione e dare via alla sessione di scambio, dove si potrà vedere in tempo reale gli _item_ che entrambi le parti vogliono scambiare.
+
+#side-img("quick_trade_items")[
+    Si possono selezionare dal proprio guardaroba gli item da dare, e quelli non dichiarati come scambiabili non saranno visibili. Si possono inoltre vedere gli item che si stanno ricevendo.\
+    Quando entrambi confermano, gli item verranno trasferiti automaticamente nei corrispettivi nuovi armadi.
+]
+
+== Storico Scambi
+
+= Notifiche

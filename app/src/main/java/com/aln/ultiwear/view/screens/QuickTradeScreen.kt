@@ -295,7 +295,6 @@ fun CameraPreviewView(onQrScanned: (String) -> Unit, closeScanner: () -> Unit) {
                                     }
                                 }
                             }
-                            .addOnFailureListener { }
                             .addOnCompleteListener { imageProxy.close() }
                     } else {
                         // if the frame is null, close the imageProxy immediately to free resources
@@ -315,6 +314,7 @@ fun CameraPreviewView(onQrScanned: (String) -> Unit, closeScanner: () -> Unit) {
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
+                // run the code on the main (UI) thread
             }, ContextCompat.getMainExecutor(context))
         }
     }

@@ -76,7 +76,7 @@ class TradeSessionViewModel(
                 participants + currentUser.uid
             }
 
-            val isReady = updatedParticipants.size >= 2
+            val isReady = updatedParticipants.size == 2
             transaction.update(
                 sessionRef, mapOf(
                     "participants" to updatedParticipants,
