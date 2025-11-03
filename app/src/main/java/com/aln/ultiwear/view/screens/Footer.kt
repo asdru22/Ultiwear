@@ -45,7 +45,7 @@ fun Footer(
                         CircleShape
                     )
                     .clickable(
-                        indication = null, // remove ripple rectangle
+                        indication = null, // remove click effect
                         interactionSource = remember { MutableInteractionSource() }
                     ) { onTabSelected(index) })
         }

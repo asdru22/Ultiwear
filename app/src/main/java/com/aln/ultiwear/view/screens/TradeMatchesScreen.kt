@@ -67,7 +67,7 @@ fun TradeMatchesScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Toggle Button
+        // toggle Button
         Row(
             modifier = Modifier
                 .fillMaxWidth()

@@ -53,7 +53,7 @@ fun TradeScreen(
     val tabs = listOf("Matches", "Manual Trade", "Quick Trade")
     var showTradesDialog by remember { mutableStateOf(false) }
 
-    // Initialize the TradesViewModel
+    // initialize the TradesViewModel
     val tradesViewModel: TradesViewModel = viewModel()
 
     Column(
@@ -91,7 +91,7 @@ fun TradeScreen(
             }
         )
 
-        // Tabs content
+        // tabs content
         when (selectedTab) {
             0 -> TradeMatchesScreen(
                 browseViewModel = browseViewModel,

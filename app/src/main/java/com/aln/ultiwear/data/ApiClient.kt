@@ -12,7 +12,7 @@ object ApiClient { // singleton object declaration
             // convert the json responses into kotlin objects
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-            // Creates an implementation of the UlticalApi interface.
+            // create an implementation of the UlticalApi interface.
             .create(UlticalApi::class.java)
     }
 }

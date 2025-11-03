@@ -74,7 +74,7 @@ class MainActivity : ComponentActivity() {
     private val authViewModel: AuthViewModel by viewModels {
         // since normally viewModels() can only call a no-argument constructor,
         // but AuthViewModel needs a AuthHandler parameter,
-        // we give it a factory that knows how to build it
+        // use a factory that knows how to build it
         viewModelFactory { // shorthand for ViewModelProvider.Factory
             initializer {
                 AuthViewModel(authHandler)
@@ -94,8 +94,7 @@ class MainActivity : ComponentActivity() {
         requestPermissionsOnStartup()
 
         // gets the system service that handles notifications
-        val manager = getSystemService(NOTIFICATION_SERVICE)
-                as NotificationManager
+        val manager = getSystemService(NotificationManager::class.java)
         // create the channel the app will use for notifications
         manager.createNotificationChannel(
             NotificationChannel(

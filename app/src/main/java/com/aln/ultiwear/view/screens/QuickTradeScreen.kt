@@ -277,7 +277,7 @@ fun CameraPreviewView(onQrScanned: (String) -> Unit, closeScanner: () -> Unit) {
                     // ensure that the analyzer runs on the main thread
                     ContextCompat.getMainExecutor(context)
                 ) { imageProxy ->
-                    //  get actual camera frame as an Image object
+                    // get actual camera frame as an Image object
                     val mediaImage = imageProxy.image
                     if (mediaImage != null) {
                         // convert the mediaImage into an InputImage

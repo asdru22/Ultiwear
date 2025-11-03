@@ -154,11 +154,11 @@ Questo metodo, dopo aver ricavato la `bitmap` dell'immagine scattata con la foto
 #side-img(
     "browse",
 )[
-    In questa sezione si possono vedere le foto e dettagli degli _item_ postati. Per ogni post non proprio si può anche mettere like e se il proprietario lo ha permesso, esprimere interesse di scambio. I bottoni di scambio e like sono oscurati e non cliccabili per i propri capi d'abbigliamento.\
+    In questa sezione si possono vedere le foto e i dettagli degli _item_ postati. Per ogni post non proprio si può anche mettere like e se il proprietario lo ha permesso, esprimere interesse di scambio. I bottoni di scambio e like sono oscurati e non cliccabili per i propri capi d'abbigliamento.\
     Ogni post è contenuto in una `LazyColumn`, ed è una `Card` composta da un `Pager` che si può scorrere per vedere le foto di fronte e retro e una `InfoBar`.\
     Il `BrowseViewModel` contiene un riferimento allo stesso `handler`, e dunque `listener` del di _Wardrobe_. Dunque, quando un utente preme il bottone like, il `ViewModel` viene notificato di questo cambiamento e ricarica la colonna.
     Per evitare che un utente possa mettere like allo stesso post più volte, ogni post dispone di una collezione che contiene gli id degli utenti che hanno messo like.\
-    Similmente, la collezione `trade_interests` tiene traccia degli utenti che hanno espresso interesse a scambiare un certo item.
+    Similmente, la collezione `trade_interests` tiene traccia degli utenti che hanno espresso interesse a scambiare un certo _item_.
 ]
 ```kt
 try {
@@ -173,7 +173,7 @@ try {
   Log.e(tag, "Error toggling like", e)
 }
 ```
-I like possono essere messi e tolti: il handler si occupa di aggiornare il database con una transazione per rendere atomica l'operazione di lettura e scrittura. Il `ViewModel` crea una copia degli _items_, e se l'id di uno di essi corrisponde con quello a cui è stato cambiato il like, si aggiorna il valore mostrato nella _card_.
+I like possono essere messi e tolti: il `handler` si occupa di aggiornare il database con una transazione per rendere atomica l'operazione di lettura e scrittura. Il `ViewModel` crea una copia degli _items_, e se l'id di uno di essi corrisponde con quello a cui è stato cambiato il like, si aggiorna il valore mostrato nella _card_.
 
 = Eventi/Upcoming Events
 Qui si possono vedere i prossimi tornei da tutto il mondo, ottenuti tramite l'api di #link("https://ultical.com/")[Ultical]. Sono _card_ ordinate dalla data di inizio più vicina alla più lontana. Ogni card ha associata una _checkbox_ per indicare se si sarà presenti ad un certo torneo.
@@ -291,11 +291,10 @@ Questa funzione funge da callback e invoca un metodo del `ViewModel` che consent
 #side-img("quick_trade_items")[
     Il `ViewModel` modifica il documento corrispondente per inserire l'utente nei membri della sessione e dare via alla sessione di scambio, dove si potrà vedere in tempo reale gli _item_ che entrambi le parti vogliono scambiare.
 
-    Si possono selezionare dal proprio guardaroba gli item da dare, e quelli non dichiarati come scambiabili non saranno visibili. Si possono inoltre vedere gli item che si stanno ricevendo.\
-    Quando entrambi confermano, gli item verranno trasferiti automaticamente nei corrispettivi nuovi armadi. Per finalizzare lo scambio, si imposta `confirmedBySender` o `confirmedByReceiver` nel database a true, quando entrambi sono veri si creano copie degli item scambiati, dove l'id dei proprietari vengono invertiti. In questo modo si ha un riferimento all oggetto scambiato associato a se, anche l'utente a cui è stato dato lo scambia nuovamente o elimina.\
-    I dati relativi allo scambio vengono caricati una sola volta sul database, sarà poi il `TradeHandler` a determinare quali oggetti mostrare in base all'id dell'utente.
+    Si possono selezionare dal proprio guardaroba gli item da dare, e quelli non dichiarati come scambiabili non saranno visibili. Si possono inoltre vedere gli item che si stanno ricevendo. Gli item che si stanno dando e ricevendo nella sessione sono memorizzati in una collezione interna della sessione di scambio.\
+    Quando entrambi confermano, gli item verranno trasferiti automaticamente nei corrispettivi nuovi armadi. Per finalizzare lo scambio, si imposta `confirmedBySender` o `confirmedByReceiver` nel database a true, quando entrambi sono veri si creano copie degli item scambiati, dove l'id dei proprietari vengono invertiti. In questo modo si ha un riferimento all oggetto scambiato associato a se, anche l'utente a cui è stato dato lo scambia nuovamente o elimina.
 ]
-
+I dati relativi allo scambio vengono caricati una sola volta sul database, sarà poi il `TradeHandler` a determinare quali oggetti mostrare in base all'id dell'utente.
 == Storico Scambi
 #side-img("trade_history")[
     Qui si possono vedere gli scambi fatti in passato, ordinati in ordine cronologico a partire dal più recente. Per ogni scambio si può vedere la data, torneo, la foto scattata e gli oggetti ceduti e ricevuti.\

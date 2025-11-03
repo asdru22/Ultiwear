@@ -19,8 +19,9 @@ class TournamentReminderWorker(
 
     private val tag = "TournamentReminderWorker"
 
-    // i am not using a view model because they
-    // exist only tied to the lifecycle of the activity
+    // not using a view model because they
+    // exist only tied to the lifecycle of an activity
+    // and there's no activity (UI) here
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
