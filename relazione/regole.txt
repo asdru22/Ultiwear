@@ -10,3 +10,12 @@ are probably too few, and more than 15 are probably too many. The
 quality of the report WILL be part of the evaluation. A good report
 also contains about 70% of implementation details and choices
 and only the remaining 30% of screenshots, overview. . .
+
+
+A presentation, which consists of a set of slides that will help you in
+the project discussion. They should contain a brief recap of the report
+alongside screenshots of the application. We suggest producing around
+10 - 15 slides since the presentation time is approximately 10 minutes (a
+group discussion may last longer). Furthermore, each component of the
+group must know the details of the entire implementation and will be
+possibly asked about it during the project discussion.

@@ -45,7 +45,9 @@ fun Footer(
                         CircleShape
                     )
                     .clickable(
-                        indication = null, // remove click effect
+                        // remove click effect
+                        indication = null,
+                        // still keep track of interactions
                         interactionSource = remember { MutableInteractionSource() }
                     ) { onTabSelected(index) })
         }

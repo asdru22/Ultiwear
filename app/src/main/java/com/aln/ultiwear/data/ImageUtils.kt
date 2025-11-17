@@ -38,6 +38,7 @@ suspend fun compressAndUpload(uri: Uri, path: String): String? =
             // upload to firebase
             val ref = Firebase.storage.reference.child(path)
             ref.putBytes(bytes).await()
+            // url for external access
             ref.downloadUrl.await().toString()
         } catch (e: Exception) {
             Log.e(tag, "compress and upload failed: ${e.message}")
